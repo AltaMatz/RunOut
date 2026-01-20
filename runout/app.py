@@ -67,8 +67,19 @@ def api_home():
 @app.route("/emergenze")
 async def emergenze():
 
-    async def fetch_classe(client, classe, token):
-        url = f"https://alfa.beta.it/api/proxySipal/v1/studenti/classe/elenco/{classe}"
+    now = datetime.now()
+    #giorno = now.strftime("%Y-%m-%d")
+    giorno = 3
+
+    #ora_reale = now.hour
+    ora_reale = 10
+    if 8 <= ora_reale <= 14:
+        ora = ora_reale-7
+    else:
+        ora = 1  # ora di default quando fuori orario
+
+    async def fetch_classe(client, aula, token):
+        url = f"https://sipal.itispaleocapa.it/api/proxySipal/v1/studenti/classe/{giorno}/{ora}/{aula}"
         headers = {
             "accept": "application/json",
             "Authorization": f"Bearer {token}"
@@ -77,70 +88,23 @@ async def emergenze():
         try:
             response = await client.get(url, headers=headers)
             response.raise_for_status() # Solleva un'eccezione per errori HTTP (4xx, 5xx)
-            return {classe: response.json()}
+            return {aula: response.json()}
         except httpx.HTTPStatusError as e:
-            return {classe: f"Errore API: {e.response.status_code}"}
+            return {aula: f"Errore API: {e.response.status_code}"}
         except Exception as e:
-            return {classe: f"Errore generico: {str(e)}"}
-
+            return {aula: f"Errore generico: {str(e)}"}
 
     # Configurazione
-    token = "eyJhbGciOiJI..." # Inserisci qui il tuo token completo
-    classi = ["3IA", "4IA", "5IA", "3IB"]
+    token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3ODQ2MjcxNzAsImlhdCI6MTc2Mzg5MTE3MCwiZGF0YSI6eyJ1c2VySWQiOiI2OTIyZDcyZmNmMTZlZWRkYzA2OGY3ZjciLCJlbWFpbCI6ImFsdGF2aWxsYS5tYXR0aWEuc3R1ZGVudGVAaXRpc3BhbGVvY2FwYS5pdCIsInBlcm1pc3Npb25MZXZlbCI6MTh9fQ.QAeTKUGu9FJIdPgup49XGv-fH0A1fhUELBIKe8e_Te4'" # Inserisci qui il tuo token completo
     
     # Utilizziamo un unico Client per tutte le richieste (molto più efficiente)
     async with httpx.AsyncClient() as client:
-        tasks = [fetch_classe(client, c, token) for c in classi]
+        tasks = [fetch_classe(client, a, token) for a in aula]
         
         # Esegue tutte le richieste in parallelo
         risultati = await asyncio.gather(*tasks)
         
-        # Elaborazione risultati
-        for r in risultati:
-            print(r)
-
-
-def emergenze_old():
-    now = datetime.now()
-    #giorno = now.strftime("%Y-%m-%d")
-    giorno = 3
-
-    # usa l'ora reale tra le 8 e le 16
-    ora_reale = now.hour
-    if 8 <= ora_reale <= 16:
-        ora = ora_reale
-    else:
-        ora = 10  # ora di default quando fuori orario
-
-    risultati = []
-
-    headers = {
-        "Authorization": f"Bearer {API_TOKEN}"
-    }
-
-    for a in aula:    
-        url = f"https://sipal.itispaleocapa.it/api/proxySipal/v1/studenti/classe/{giorno}/{ora}/{a}"
-
-        try:
-            response = requests.get(url, headers=headers, timeout=1)
-            response.raise_for_status()
-            data = response.json()
-
-            risultati.append({
-                "aula": a,
-                "risultato": data,
-                "errore": None
-            })
-
-        except Exception as e:
-            risultati.append({
-                "aula": a,
-                "risultato": None,
-                "errore": str(e)
-            })
-
-    return render_template("emergenze.html", risultati=risultati, giorno=giorno, ora=ora)
-
+        return render_template("emergenze.html", risultati=risultati, giorno=giorno, ora=ora)
 
 
 @app.route("/piantina")
