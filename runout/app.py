@@ -3,10 +3,11 @@ from flask import Flask, jsonify, render_template  # type: ignore
 import requests #type: ignore
 import os
 from dotenv import load_dotenv # type: ignore
-
+import asyncio
+import httpx
 
 app = Flask(__name__)
-# carica il file .env e legeg il token
+# carica il file .env e legge il token
 load_dotenv()
 API_TOKEN = os.getenv("API_TOKEN")
 
@@ -64,7 +65,42 @@ def api_home():
     })
 
 @app.route("/emergenze")
-def emergenze():
+async def emergenze():
+
+    async def fetch_classe(client, classe, token):
+        url = f"https://alfa.beta.it/api/proxySipal/v1/studenti/classe/elenco/{classe}"
+        headers = {
+            "accept": "application/json",
+            "Authorization": f"Bearer {token}"
+        }
+        
+        try:
+            response = await client.get(url, headers=headers)
+            response.raise_for_status() # Solleva un'eccezione per errori HTTP (4xx, 5xx)
+            return {classe: response.json()}
+        except httpx.HTTPStatusError as e:
+            return {classe: f"Errore API: {e.response.status_code}"}
+        except Exception as e:
+            return {classe: f"Errore generico: {str(e)}"}
+
+
+    # Configurazione
+    token = "eyJhbGciOiJI..." # Inserisci qui il tuo token completo
+    classi = ["3IA", "4IA", "5IA", "3IB"]
+    
+    # Utilizziamo un unico Client per tutte le richieste (molto più efficiente)
+    async with httpx.AsyncClient() as client:
+        tasks = [fetch_classe(client, c, token) for c in classi]
+        
+        # Esegue tutte le richieste in parallelo
+        risultati = await asyncio.gather(*tasks)
+        
+        # Elaborazione risultati
+        for r in risultati:
+            print(r)
+
+
+def emergenze_old():
     now = datetime.now()
     #giorno = now.strftime("%Y-%m-%d")
     giorno = 3
