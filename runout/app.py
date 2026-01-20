@@ -11,7 +11,7 @@ load_dotenv()
 API_TOKEN = os.getenv("API_TOKEN")
 
 
-BASE_URL = "https://sipal.itispaleocapa.it/api/proxySipal"
+BASE_URL = "https://sipal.itispaleocapa.it/api/proxySipal/swagger/#"
 
 aula = [
     # --- SEDE CENTRALE ---
