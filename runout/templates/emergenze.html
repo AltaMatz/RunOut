@@ -23,11 +23,11 @@
         </div>
         <div class="stat-card success">
             <div class="stat-number">{{ risultati|selectattr('errore', 'none')|list|length }}</div>
-            <div class="stat-label">Connessioni OK</div>
+            <div class="stat-label">Classi piene</div>
         </div>
         <div class="stat-card error">
             <div class="stat-number">{{ risultati|selectattr('errore')|list|length }}</div>
-            <div class="stat-label">Errori</div>
+            <div class="stat-label">Classi vuote</div>
         </div>
     </div>
 

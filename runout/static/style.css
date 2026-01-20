@@ -227,11 +227,11 @@ body {
 }
 
 .stat-card.success {
-    border-left-color: #315c81;
+    border-left-color: #48bb78;
 }
 
 .stat-card.error {
-    border-left-color: #a7e50a;
+    border-left-color: #f56565;
 }
 
 .stat-number {
