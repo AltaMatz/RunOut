@@ -256,6 +256,12 @@ body {
     gap: 1.5rem;
 }
 
+.classe-card-link {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+}
+
 .classe-card {
     background: white;
     border-radius: 12px;
@@ -263,6 +269,7 @@ body {
     overflow: hidden;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
     border-top: 3px solid #4299e1;
+    cursor: pointer;
 }
 
 .classe-card:hover {
@@ -395,6 +402,122 @@ body {
     font-size: 0.9rem;
     margin: 0 0 0.5rem 0;
     font-weight: 500;
+}
+
+/* Stili per la pagina elenco studenti */
+.back-button-container {
+    margin-bottom: 2rem;
+}
+
+.back-button {
+    display: inline-block;
+    padding: 0.75rem 1.5rem;
+    background: #2d3748;
+    color: white;
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.back-button:hover {
+    background: #1a202c;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.error-container {
+    margin: 2rem 0;
+    padding: 2rem;
+    background: #fed7d7;
+    border-radius: 12px;
+    border-left: 4px solid #f56565;
+}
+
+.error-message-large {
+    color: #742a2a;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.studenti-container {
+    margin-top: 2rem;
+}
+
+.studenti-header {
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.studenti-count-large {
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+}
+
+.count-number-large {
+    font-size: 3rem;
+    font-weight: 700;
+    color: #2d3748;
+}
+
+.count-label-large {
+    font-size: 1.2rem;
+    color: #718096;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 600;
+}
+
+.studenti-list-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1rem;
+}
+
+.studente-card {
+    background: white;
+    padding: 1.25rem;
+    border-radius: 10px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    border-left: 4px solid #4299e1;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.studente-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.studente-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.studente-nome {
+    font-size: 1.1rem;
+    color: #2d3748;
+    font-weight: 600;
+}
+
+.studente-matricola,
+.studente-classe {
+    font-size: 0.9rem;
+    color: #718096;
+}
+
+.empty-container {
+    text-align: center;
+    padding: 4rem 2rem;
+}
+
+.empty-message-large {
+    color: #a0aec0;
+    font-size: 1.2rem;
+    font-style: italic;
+    margin: 0;
 }
 
 @media (max-width: 768px) {
