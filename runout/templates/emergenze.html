@@ -33,11 +33,21 @@
 
     <div class="classi-grid">
         {% for risultato in risultati %}
-        {% if risultato.risultato and risultato.risultato is mapping %}
-            {% set classe = risultato.risultato.get('classe', risultato.aula) %}
-        {% else %}
-            {% set classe = risultato.aula %}
-        {% endif %}
+         {# Provo a ricavare la CLASSE:
+            - prima da risultato.risultato['classe']
+            - altrimenti dal primo studente (se presente) -> studente['classe']
+            - fallback: uso l'aula #}
+         {% set classe = risultato.aula %}
+         {% if risultato.risultato and risultato.risultato is mapping %}
+             {% if risultato.risultato.get('classe') %}
+                 {% set classe = risultato.risultato.get('classe') %}
+             {% elif risultato.risultato.get('studenti') and (risultato.risultato.get('studenti')|length > 0) %}
+                 {% set primo = risultato.risultato.get('studenti')[0] %}
+                 {% if primo is mapping and primo.get('classe') %}
+                     {% set classe = primo.get('classe') %}
+                 {% endif %}
+             {% endif %}
+         {% endif %}
         <a href="{{ url_for('elencoStudenti', classe=classe) }}" class="classe-card-link">
         <div class="classe-card {% if risultato.errore %}error-card{% else %}success-card{% endif %}">
             <div class="classe-header">

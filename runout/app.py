@@ -5,6 +5,7 @@ import requests #type: ignore
 from dotenv import load_dotenv # type: ignore
 import asyncio
 import httpx # type:ignore
+from urllib.parse import quote
 
 app = Flask(__name__)
 load_dotenv()
@@ -115,7 +116,9 @@ async def elencoStudenti(classe):
     # La classe viene passata dall'URL quando clicchi su una card
     # Esempio: /elencoStudenti/5AIT -> classe = "5AIT"
     
-    url = f"https://sipal.itispaleocapa.it/api/proxySipal/v1/studenti/classe/elenco/{classe}"
+    # la classe può avere spazi/caratteri speciali, quindi la URL-encodiamo
+    classe_encoded = quote(str(classe), safe="")
+    url = f"https://sipal.itispaleocapa.it/api/proxySipal/v1/studenti/classe/elenco/{classe_encoded}"
     headers = {
         "accept": "application/json",
         "Authorization": f"Bearer {API_TOKEN}",
@@ -131,8 +134,15 @@ async def elencoStudenti(classe):
             # Estraggo gli studenti dal risultato
             studenti = []
             if isinstance(dati_classe, dict):
-                if 'studenti' in dati_classe:
-                    studenti = dati_classe['studenti']
+                # FORMATO VISTO: {"3IA": ["NOME1", "NOME2", ...]}
+                if str(classe) in dati_classe and isinstance(dati_classe[str(classe)], list):
+                    studenti = dati_classe[str(classe)]
+                # fallback: dict con una sola chiave -> prendo il primo valore se è lista
+                elif len(dati_classe) == 1:
+                    only_val = next(iter(dati_classe.values()))
+                    if isinstance(only_val, list):
+                        studenti = only_val
+                # formato alternativo: {"studenti":[...]}
                 elif isinstance(dati_classe.get('studenti'), list):
                     studenti = dati_classe['studenti']
             elif isinstance(dati_classe, list):
