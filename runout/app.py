@@ -4,7 +4,7 @@ from flask import Flask, jsonify, render_template  # type: ignore
 import requests #type: ignore
 from dotenv import load_dotenv # type: ignore
 import asyncio
-import httpx
+import httpx # type:ignore
 
 app = Flask(__name__)
 load_dotenv()
@@ -106,6 +106,66 @@ async def emergenze():
         risultati = await asyncio.gather(*tasks) # Esecuzione delle richieste in parallelo
         
         return render_template("emergenze.html", risultati=risultati, giorno=giorno, ora=ora)
+
+
+
+
+@app.route("/elencoStudenti/<classe>")
+async def elencoStudenti(classe):
+    # La classe viene passata dall'URL quando clicchi su una card
+    # Esempio: /elencoStudenti/5AIT -> classe = "5AIT"
+    
+    url = f"https://sipal.itispaleocapa.it/api/proxySipal/v1/studenti/classe/elenco/{classe}"
+    headers = {
+        "accept": "application/json",
+        "Authorization": f"Bearer {API_TOKEN}",
+        "User-Agent": "Mozilla/5.0"
+    }
+    
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url, headers=headers)
+            response.raise_for_status()
+            dati_classe = response.json()
+            
+            # Estraggo gli studenti dal risultato
+            studenti = []
+            if isinstance(dati_classe, dict):
+                if 'studenti' in dati_classe:
+                    studenti = dati_classe['studenti']
+                elif isinstance(dati_classe.get('studenti'), list):
+                    studenti = dati_classe['studenti']
+            elif isinstance(dati_classe, list):
+                studenti = dati_classe
+            
+            return render_template(
+                "elenco_studenti.html",
+                classe=classe,
+                studenti=studenti,
+                giorno=None,
+                ora=None,
+                errore=None
+            )
+    except httpx.HTTPStatusError as e:
+        return render_template(
+            "elenco_studenti.html",
+            classe=classe,
+            studenti=[],
+            giorno=None,
+            ora=None,
+            errore=f"Errore HTTP {e.response.status_code}"
+        )
+    except Exception as e:
+        return render_template(
+            "elenco_studenti.html",
+            classe=classe,
+            studenti=[],
+            giorno=None,
+            ora=None,
+            errore=f"Errore generico: {str(e)}"
+        )
+
+
 
 @app.route("/piantina")
 def piantina():

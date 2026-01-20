@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}Elenco Studenti - {{ classe }} - Runout{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    <div class="page-header">
+        <h2>ELENCO STUDENTI</h2>
+        <div class="info-bar">
+            <span class="info-item">
+                <strong>Classe:</strong> {{ classe }}
+            </span>
+        </div>
+    </div>
+
+    <div class="back-button-container">
+        <a href="{{ url_for('emergenze') }}" class="back-button">
+            ← Torna alle Emergenze
+        </a>
+    </div>
+
+    {% if errore %}
+        <div class="error-container">
+            <div class="error-message-large">
+                <strong>Errore:</strong> {{ errore }}
+            </div>
+        </div>
+    {% else %}
+        <div class="studenti-container">
+            <div class="studenti-header">
+                <div class="studenti-count-large">
+                    <span class="count-number-large">{{ studenti|length }}</span>
+                    <span class="count-label-large">studenti</span>
+                </div>
+            </div>
+
+            {% if studenti|length > 0 %}
+                <div class="studenti-list-container">
+                    {% for studente in studenti %}
+                        <div class="studente-card">
+                            {% if studente is mapping %}
+                                <div class="studente-info">
+                                    {% if studente.get('nome') or studente.get('cognome') %}
+                                        <div class="studente-nome">
+                                            {% if studente.get('cognome') %}
+                                                <strong>{{ studente.cognome }}</strong>
+                                            {% endif %}
+                                            {% if studente.get('nome') %}
+                                                {{ studente.nome }}
+                                            {% endif %}
+                                        </div>
+                                    {% endif %}
+                                    {% if studente.get('matricola') %}
+                                        <div class="studente-matricola">
+                                            Matricola: {{ studente.matricola }}
+                                        </div>
+                                    {% endif %}
+                                    {% if studente.get('classe') %}
+                                        <div class="studente-classe">
+                                            Classe: {{ studente.classe }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            {% else %}
+                                <div class="studente-info">
+                                    <div class="studente-nome">{{ studente }}</div>
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty-container">
+                    <p class="empty-message-large">Nessuno studente presente in questa aula</p>
+                </div>
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+

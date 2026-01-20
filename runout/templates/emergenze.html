@@ -33,6 +33,12 @@
 
     <div class="classi-grid">
         {% for risultato in risultati %}
+        {% if risultato.risultato and risultato.risultato is mapping %}
+            {% set classe = risultato.risultato.get('classe', risultato.aula) %}
+        {% else %}
+            {% set classe = risultato.aula %}
+        {% endif %}
+        <a href="{{ url_for('elencoStudenti', classe=classe) }}" class="classe-card-link">
         <div class="classe-card {% if risultato.errore %}error-card{% else %}success-card{% endif %}">
             <div class="classe-header">
                 <h3 class="classe-nome">{{ risultato.aula }}</h3>
@@ -94,6 +100,7 @@
                 </div>
             {% endif %}
         </div>
+        </a>
         {% endfor %}
     </div>
 </div>
