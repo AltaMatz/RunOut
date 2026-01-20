@@ -13,7 +13,7 @@
             "2-5",
             "2-6",
             "2-7",
-            "LAB DIS - 2"
+            "2-8"
         ],
         "1° PIANO\nPALAZZINE": [],
         "2° PIANO\nCENTRALE": [
@@ -28,7 +28,7 @@
     },
     "PUNTO 2": {
         "PIANO TERRA\nCENTRALE": [
-            "LAB DIS - 1"
+            "1-32"
         ],
         "PIANO TERRA\nPALAZZINE": [],
         "1° PIANO\nCENTRALE": [],
@@ -69,10 +69,10 @@
     },
     "PUNTO 4": {
         "PIANO TERRA\nCENTRALE": [
-            "LAB LTO",
-            "PALESTRA 1",
-            "PALESTRA 2",
-            "SALA PESI"
+            "LTO",
+            "PAL1",
+            "PAL2",
+            "PALF"
         ],
         "PIANO TERRA\nPALAZZINE": [],
         "1° PIANO\nCENTRALE": [],
@@ -101,7 +101,7 @@
             "1-94",
             "1-95",
             "1-96",
-            "BASKIN"
+            "PBAS"
         ],
         "PIANO TERRA\nPALAZZINE": [
             "E1-5",
@@ -118,16 +118,28 @@
     "PUNTO 6": {
         "PIANO TERRA\nCENTRALE": [],
         "PIANO TERRA\nPALAZZINE": [
+            "E0-1",
+            "E0-2",
+            "E0-3",
             "E1-7",
             "E1-8",
+            "M0-1",
+            "M0-2",
+            "M0-3",
             "M1-8",
             "M1-11",
             "M1-18",
+            "T0-1",
             "T1-6",
             "T1-7",
             "T1-12",
             "T1-13",
             "T1-14",
+            "I0-1",
+            "I0-2",
+            "I0-3",
+            "I0-4",
+            "I0-5",
             "I1-1",
             "I1-2",
             "I1-3",
