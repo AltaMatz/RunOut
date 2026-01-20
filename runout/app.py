@@ -1,18 +1,14 @@
 from datetime import datetime
+import os
 from flask import Flask, jsonify, render_template  # type: ignore
 import requests #type: ignore
-import os
 from dotenv import load_dotenv # type: ignore
 import asyncio
 import httpx
 
 app = Flask(__name__)
-# carica il file .env e legge il token
 load_dotenv()
-API_TOKEN = os.getenv("API_TOKEN")
-
-
-BASE_URL = "https://sipal.itispaleocapa.it/api/proxySipal/swagger/#"
+API_TOKEN = os.getenv("API_TOKEN") # Carico il token dal file .env
 
 aula = [
     # --- SEDE CENTRALE ---
@@ -41,7 +37,6 @@ aula = [
     "PALESTRA 1", "PALESTRA 2", "SALA PESI",
 ]
 
-
 @app.route("/")
 def home():
     return render_template("home.html")
@@ -51,7 +46,7 @@ def api_home():
     now = datetime.now()
     giorno = now.isoweekday()
     #ora_reale = now.hour
-    ora_reale = 10
+    ora_reale = 10 #ora fissa per test
 
     if 8 <= ora_reale <= 16:
         ora_mappata = ora_reale - 7
@@ -69,43 +64,48 @@ async def emergenze():
 
     now = datetime.now()
     #giorno = now.strftime("%Y-%m-%d")
-    giorno = 3
+    giorno = 3 #giorno fisso per test
 
     #ora_reale = now.hour
-    ora_reale = 10
+    ora_reale = 10 #ora fissa per test
     if 8 <= ora_reale <= 14:
         ora = ora_reale-7
     else:
-        ora = 1  # ora di default quando fuori orario
+        ora = 1  #ora di default quando fuori orario
 
-    async def fetch_classe(client, aula, token):
+    sem = asyncio.Semaphore(5)
+    async def fetch_classe(client, aula, API_TOKEN):
         url = f"https://sipal.itispaleocapa.it/api/proxySipal/v1/studenti/classe/{giorno}/{ora}/{aula}"
         headers = {
             "accept": "application/json",
-            "Authorization": f"Bearer {token}"
+            "Authorization": f"Bearer {API_TOKEN}",
+            "User-Agent": "Mozilla/5.0"
         }
         
         try:
             response = await client.get(url, headers=headers)
-            response.raise_for_status() # Solleva un'eccezione per errori HTTP (4xx, 5xx)
-            return {aula: response.json()}
+            response.raise_for_status()
+            return {
+                "aula": aula,
+                "risultato": response.json(),
+                "errore": None
+            }
         except httpx.HTTPStatusError as e:
-            return {aula: f"Errore API: {e.response.status_code}"}
+            return {"aula": aula,
+                    "risultato": None,
+                    "errore": f"Errore HTTP {e.response.status_code}"
+            }
         except Exception as e:
-            return {aula: f"Errore generico: {str(e)}"}
-
-    # Configurazione
-    token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3ODQ2MjcxNzAsImlhdCI6MTc2Mzg5MTE3MCwiZGF0YSI6eyJ1c2VySWQiOiI2OTIyZDcyZmNmMTZlZWRkYzA2OGY3ZjciLCJlbWFpbCI6ImFsdGF2aWxsYS5tYXR0aWEuc3R1ZGVudGVAaXRpc3BhbGVvY2FwYS5pdCIsInBlcm1pc3Npb25MZXZlbCI6MTh9fQ.QAeTKUGu9FJIdPgup49XGv-fH0A1fhUELBIKe8e_Te4'" # Inserisci qui il tuo token completo
+            return {"aula": aula, 
+                    "risultato": None, 
+                    "errore": f"Errore generico: {str(e)}"
+            }
     
-    # Utilizziamo un unico Client per tutte le richieste (molto più efficiente)
     async with httpx.AsyncClient() as client:
-        tasks = [fetch_classe(client, a, token) for a in aula]
-        
-        # Esegue tutte le richieste in parallelo
-        risultati = await asyncio.gather(*tasks)
+        tasks = [fetch_classe(client, a, API_TOKEN) for a in aula]
+        risultati = await asyncio.gather(*tasks) # Esecuzione delle richieste in parallelo
         
         return render_template("emergenze.html", risultati=risultati, giorno=giorno, ora=ora)
-
 
 @app.route("/piantina")
 def piantina():
@@ -114,8 +114,6 @@ def piantina():
 @app.route("/registri-compilati")
 def registri_compilati():
     return render_template("registri_compilati.html")
-
-
 
 if __name__ == "__main__":
     app.run(debug=True)
