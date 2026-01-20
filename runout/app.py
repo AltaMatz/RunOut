@@ -38,7 +38,7 @@ aula = [
     "T2-1", "T2-2", "T2-3", "T2-9",
     "T3-1", "T3-3", "T3-4", "T3-7", "T3-8",
     # --- EDIFICIO PALESTRE ---
-    "PAL1", "PAL2", "PALF",
+    "PAL1", "PAL2", "PALF", "PQU1", "PQU2"
 ]
 
 @app.route("/")
@@ -50,16 +50,16 @@ async def emergenze():
 
     now = datetime.now()
     #giorno = now.strftime("%Y-%m-%d")
-    giorno = 1 #giorno fisso per test
+    giorno = 3 #giorno fisso per test
 
     #ora_reale = now.hour
-    ora_reale = 9 #ora fissa per test
+    ora_reale = 11 #ora fissa per test
     if 8 <= ora_reale <= 14:
         ora = ora_reale-7
     else:
         ora = 1  #ora di default quando fuori orario
 
-    sem = asyncio.Semaphore(5)
+    sem = asyncio.Semaphore(20)
     async def fetch_classe(client, aula, API_TOKEN):
         url = f"https://sipal.itispaleocapa.it/api/proxySipal/v1/studenti/classe/{giorno}/{ora}/{aula}"
         headers = {
@@ -95,8 +95,6 @@ async def emergenze():
 
 @app.route("/elencoStudenti/<classe>") # ROTTA ELENCO STUDENTI
 async def elencoStudenti(classe):
-    # La classe viene passata dall'URL quando clicchi su una card
-    # Esempio: /elencoStudenti/5AIT -> classe = "5AIT"
     
     url = f"https://sipal.itispaleocapa.it/api/proxySipal/v1/studenti/classe/elenco/{classe}"
     headers = {
@@ -111,7 +109,6 @@ async def elencoStudenti(classe):
             response.raise_for_status()
             dati_classe = response.json()
             
-            # Estraggo gli studenti dal risultato
             studenti = []
             if isinstance(dati_classe, dict):
                 if 'studenti' in dati_classe:
