@@ -43,4 +43,4 @@ def xlsx_to_json_by_point(puntiraccolta, output_file):
 
 # ESEMPIO USO
 if __name__ == "__main__":
-    xlsx_to_json_by_point("puntiraccolta.xlsx", "output.json")
+    xlsx_to_json_by_point("puntiraccolta.xlsx", "puntiraccolta.json")

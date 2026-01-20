@@ -64,10 +64,10 @@ async def emergenze():
 
     now = datetime.now()
     #giorno = now.strftime("%Y-%m-%d")
-    giorno = 3 #giorno fisso per test
+    giorno = 5 #giorno fisso per test
 
     #ora_reale = now.hour
-    ora_reale = 10 #ora fissa per test
+    ora_reale = 9 #ora fissa per test
     if 8 <= ora_reale <= 14:
         ora = ora_reale-7
     else:
