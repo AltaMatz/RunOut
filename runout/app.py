@@ -1,7 +1,6 @@
 from datetime import datetime
 import os
 from flask import Flask, jsonify, render_template  # type: ignore
-import requests #type: ignore
 from dotenv import load_dotenv # type: ignore
 import asyncio
 import httpx
@@ -14,10 +13,10 @@ aula = [
     # --- SEDE CENTRALE ---
     "1-5", "1-8", "1-11", "1-12", "1-14", "1-15", "1-17", "1-90", "1-91", "1-92", "1-93", "1-94", "1-95", "1-96", "LAB DIS - 1", "LAB LTO",
     "2-1", "2-2", "2-5", "2-6", "2-7", "2-12", "LAB DIS - 2",
-    "3-3", "3-4", "3-5", "3-6", "3-7", "3-8", "3-9", "3-10", "3-11", "3-12", "3-13", "3-14", "3-15", "3-16", "3-17", "3-18", "3-19", "3-20",
-    "4-2", "4-3",
+    "3-3", "3-4", "3-5", "3-6", "3-7", "3-8", "3-9", "3-10", "3-11", "3-12", "3-13", "3-14", "3-15", "3-16", "3-17", "3-18", "3-19",
+    "4-2", "4-3", "4-11", "4-12", "4-13",
     "BASKIN",
-    # --- PALAZZINA ELETTRONICA --
+    # --- PALAZZINA ELETTRONICA ---
     "E1-5", "E1-7", "E1-8", "E1-10",
     "E2-1", "E2-2", "E2-7", "E2-9",
     "E3-1", "E3-2", "E3-5", "E3-6", "E3-8",
@@ -32,7 +31,7 @@ aula = [
     # --- PALAZZINA TESSILE ---
     "T1-6", "T1-7", "T1-12", "T1-13", "T1-14",
     "T2-1", "T2-2", "T2-3", "T2-9",
-    "T3-1", "T3-3", "T3-4", "T3-7", "T3-8"
+    "T3-1", "T3-3", "T3-4", "T3-7", "T3-8",
     # --- EDIFICIO PALESTRE ---
     "PALESTRA 1", "PALESTRA 2", "SALA PESI",
 ]
@@ -46,7 +45,7 @@ def api_home():
     now = datetime.now()
     giorno = now.isoweekday()
     #ora_reale = now.hour
-    ora_reale = 10 #ora fissa per test
+    ora_reale = 12 #ora fissa per test
 
     if 8 <= ora_reale <= 16:
         ora_mappata = ora_reale - 7
@@ -64,7 +63,7 @@ async def emergenze():
 
     now = datetime.now()
     #giorno = now.strftime("%Y-%m-%d")
-    giorno = 5 #giorno fisso per test
+    giorno = 1 #giorno fisso per test
 
     #ora_reale = now.hour
     ora_reale = 9 #ora fissa per test
