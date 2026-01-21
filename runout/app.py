@@ -91,10 +91,28 @@ async def emergenze():
         tasks = [fetch_classe(client, a, API_TOKEN) for a in aula]
         risultati = await asyncio.gather(*tasks) # Esecuzione delle richieste in parallelo
         
-        return render_template("emergenze.html", risultati=risultati, giorno=giorno, ora=ora)
+        # Aggiungi classe a ciascun risultato e filtra quelli senza corrispondenza
+        risultati_filtrati = []
+        for r in risultati:
+            classe = r['aula']
+            if r['risultato'] and isinstance(r['risultato'], dict):
+                if r['risultato'].get('classe'):
+                    classe = r['risultato']['classe']
+                elif r['risultato'].get('studenti') and len(r['risultato']['studenti']) > 0:
+                    primo = r['risultato']['studenti'][0]
+                    if isinstance(primo, dict) and primo.get('classe'):
+                        classe = primo['classe']
+            r['classe'] = classe
+            if classe != r['aula']:
+                risultati_filtrati.append(r)
+        
+        # Ordina alfanumericamente per classe
+        risultati_filtrati.sort(key=lambda x: x['classe'])
+        
+        return render_template("emergenze.html", risultati=risultati_filtrati, giorno=giorno, ora=ora)
 
-@app.route("/elencoStudenti/<classe>") # ROTTA ELENCO STUDENTI
-async def elencoStudenti(classe):
+@app.route("/elencoStudenti/<classe>/<aula>") # ROTTA ELENCO STUDENTI
+async def elencoStudenti(classe, aula):
     
     url = f"https://sipal.itispaleocapa.it/api/proxySipal/v1/studenti/classe/elenco/{classe}"
     headers = {
@@ -121,6 +139,7 @@ async def elencoStudenti(classe):
             return render_template(
                 "elenco_studenti.html",
                 classe=classe,
+                aula=aula,
                 studenti=studenti,
                 giorno=None,
                 ora=None,
@@ -130,6 +149,7 @@ async def elencoStudenti(classe):
         return render_template(
             "elenco_studenti.html",
             classe=classe,
+            aula=aula,
             studenti=[],
             giorno=None,
             ora=None,
@@ -139,6 +159,7 @@ async def elencoStudenti(classe):
         return render_template(
             "elenco_studenti.html",
             classe=classe,
+            aula=aula,
             studenti=[],
             giorno=None,
             ora=None,

@@ -33,30 +33,10 @@
 
     <div class="classi-grid">
         {% for risultato in risultati %}
-         {# Provo a ricavare la CLASSE:
-            - prima da risultato.risultato['classe']
-            - altrimenti dal primo studente (se presente) -> studente['classe']
-            - fallback: uso l'aula #}
-         {% set classe = risultato.aula %}
-         {% if risultato.risultato and risultato.risultato is mapping %}
-             {% if risultato.risultato.get('classe') %}
-                 {% set classe = risultato.risultato.get('classe') %}
-             {% elif risultato.risultato.get('studenti') and (risultato.risultato.get('studenti')|length > 0) %}
-                 {% set primo = risultato.risultato.get('studenti')[0] %}
-                 {% if primo is mapping and primo.get('classe') %}
-                     {% set classe = primo.get('classe') %}
-                 {% endif %}
-             {% endif %}
-         {% endif %}
-        <a href="{{ url_for('elencoStudenti', classe=classe) }}" class="classe-card-link">
+        <a href="{{ url_for('elencoStudenti', classe=risultato.classe, aula=risultato.aula) }}" class="classe-card-link">
         <div class="classe-card {% if risultato.errore %}error-card{% else %}success-card{% endif %}">
             <div class="classe-header">
-                <h3 class="classe-nome">{{ risultato.aula }}</h3>
-                {% if risultato.errore %}
-                    <span class="status-badge error-badge">VUOTA</span>
-                {% else %}
-                    <span class="status-badge success-badge">PIENA</span>
-                {% endif %}
+                <h3 class="classe-nome">{{ risultato.classe }}</h3>
             </div>
             
             {% if risultato.errore %}
@@ -91,7 +71,14 @@
                                 {% endif %}
                             {% elif risultato.risultato.get('classe') or risultato.risultato.get('aula') %}
                                 <p class="info-message">Dati aula disponibili</p>
-                                <pre class="data-preview">{{ risultato.risultato|tojson(indent=2) }}</pre>
+                                <div class="aula-info">
+                                    <div class="info-item">
+                                        <strong>AULA:</strong> {{ risultato.aula }}
+                                    </div>
+                                    <div class="info-item">
+                                        <strong>N. STUDENTI:</strong> {{ risultato.risultato.get('studenti', [])|length }}
+                                    </div>
+                                </div>
                             {% else %}
                                 <p class="empty-message">Nessuno studente presente</p>
                             {% endif %}
