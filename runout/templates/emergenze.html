@@ -18,16 +18,16 @@
 
     <div class="stats-bar">
         <div class="stat-card">
-            <div class="stat-number">{{ risultati|length }}</div>
+            <div class="stat-number">{{ total_aule }}</div>
             <div class="stat-label">Totale Aule</div>
         </div>
         <div class="stat-card success">
-            <div class="stat-number">{{ risultati|selectattr('errore', 'none')|list|length }}</div>
-            <div class="stat-label">Classi piene</div>
+            <div class="stat-number">{{ num_with_class }}</div>
+            <div class="stat-label">Aule piene</div>
         </div>
         <div class="stat-card error">
-            <div class="stat-number">{{ risultati|selectattr('errore')|list|length }}</div>
-            <div class="stat-label">Classi vuote</div>
+            <div class="stat-number">{{ total_aule - num_with_class }}</div>
+            <div class="stat-label">Aule vuote</div>
         </div>
     </div>
 

@@ -40,6 +40,7 @@ aula = [
     # --- EDIFICIO PALESTRE ---
     "PAL1", "PAL2", "PALF", "PQU1", "PQU2"
 ]
+# print (len(aula))
 
 @app.route("/")
 def home():
@@ -50,10 +51,10 @@ async def emergenze():
 
     now = datetime.now()
     #giorno = now.strftime("%Y-%m-%d")
-    giorno = 3 #giorno fisso per test
+    giorno = 4 #giorno fisso per test
 
     #ora_reale = now.hour
-    ora_reale = 11 #ora fissa per test
+    ora_reale = 12 #ora fissa per test
     if 8 <= ora_reale <= 14:
         ora = ora_reale-7
     else:
@@ -93,23 +94,33 @@ async def emergenze():
         
         # Aggiungi classe a ciascun risultato e filtra quelli senza corrispondenza
         risultati_filtrati = []
+        num_errors = 0
+        num_with_class = 0
         for r in risultati:
             classe = r['aula']
+            has_class = False
             if r['risultato'] and isinstance(r['risultato'], dict):
                 if r['risultato'].get('classe'):
                     classe = r['risultato']['classe']
+                    has_class = True
                 elif r['risultato'].get('studenti') and len(r['risultato']['studenti']) > 0:
                     primo = r['risultato']['studenti'][0]
                     if isinstance(primo, dict) and primo.get('classe'):
                         classe = primo['classe']
+                        has_class = True
             r['classe'] = classe
+            if r['errore']:
+                num_errors += 1
+            elif has_class:
+                num_with_class += 1
             if classe != r['aula']:
                 risultati_filtrati.append(r)
         
         # Ordina alfanumericamente per classe
         risultati_filtrati.sort(key=lambda x: x['classe'])
         
-        return render_template("emergenze.html", risultati=risultati_filtrati, giorno=giorno, ora=ora)
+        total_aule = len(aula)
+        return render_template("emergenze.html", risultati=risultati_filtrati, giorno=giorno, ora=ora, total_aule=total_aule, num_with_class=num_with_class)
 
 @app.route("/elencoStudenti/<classe>/<aula>") # ROTTA ELENCO STUDENTI
 async def elencoStudenti(classe, aula):
