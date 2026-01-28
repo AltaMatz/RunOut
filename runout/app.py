@@ -1,5 +1,6 @@
 from datetime import datetime
 import os
+import json
 from flask import Flask, jsonify, render_template  # type: ignore
 import requests #type: ignore
 from dotenv import load_dotenv # type: ignore
@@ -10,36 +11,14 @@ app = Flask(__name__)
 load_dotenv()
 API_TOKEN = os.getenv("API_TOKEN") # Carico il token dal file .env
 
-aula = [
-    # --- SEDE CENTRALE ---
-    "1-5", "1-8", "1-11", "1-12", "1-14", "1-15", "1-17", "1-32", "1-90", "1-91", "1-92", "1-93", "1-94", "1-95", "1-96", "LTO",
-    "2-1", "2-2", "2-5", "2-6", "2-7", "2-8", "2-12",
-    "3-3", "3-4", "3-5", "3-6", "3-7", "3-8", "3-9", "3-10", "3-11", "3-12", "3-13", "3-14", "3-15", "3-16", "3-17", "3-18", "3-19", "3-20",
-    "4-2", "4-3", "4-11", "4-12", "4-13",
-    "PBAS",
-    # --- PALAZZINA ELETTRONICA --
-    "E0-1", "E0-2", "E0-3", 
-    "E1-5", "E1-7", "E1-8", "E1-10",
-    "E2-1", "E2-2", "E2-7", "E2-9",
-    "E3-1", "E3-2", "E3-5", "E3-6", "E3-8",
-    # --- PALAZZINA INFORMATICA ---
-    "I0-1", "I0-2", "I0-3", "I0-4", "I0-5",
-    "I1-1", "I1-2", "I1-3", "I1-6", "I1-13",
-    "I2-1", "I2-2", "I2-3", "I2-6", "I2-13",
-    "I3-1", "I3-2", "I3-3", "I3-6", "I3-13",
-    # --- PALAZZINA MECCANICA ---
-    "M0-1", "M0-2", "M0-3",
-    "M1-8", "M1-11", "M1-18", "M1-23",
-    "M2-1", "M2-3", "M2-4", "M2-7",
-    "M3-1", "M3-3", "M3-4", "M3-5", "M3-8", 
-    # --- PALAZZINA TESSILE ---
-    "T0-1",
-    "T1-6", "T1-7", "T1-12", "T1-13", "T1-14",
-    "T2-1", "T2-2", "T2-3", "T2-9",
-    "T3-1", "T3-3", "T3-4", "T3-7", "T3-8",
-    # --- EDIFICIO PALESTRE ---
-    "PAL1", "PAL2", "PALF", "PQU1", "PQU2"
-]
+# Carica le aule dal file JSON
+with open('floors.json', 'r', encoding='utf-8') as f:
+    aule_dict = json.load(f)
+
+# Crea una lista piatta di tutte le aule
+aula = []
+for floor, rooms in aule_dict.items():
+    aula.extend(rooms)
 # print (len(aula))
 
 @app.route("/")
