@@ -35,40 +35,61 @@
             </div>
 
             {% if studenti|length > 0 %}
-                <div class="studenti-list-container">
-                    {% for studente in studenti %}
-                        <div class="studente-card">
+                <form id="presenze-form">
+                    <div class="studenti-list-container">
+                        {% for studente in studenti %}
+                            {% set nome_studente = studente %}
                             {% if studente is mapping %}
-                                <div class="studente-info">
-                                    {% if studente.get('nome') or studente.get('cognome') %}
-                                        <div class="studente-nome">
-                                            {% if studente.get('cognome') %}
-                                                <strong>{{ studente.cognome }}</strong>
-                                            {% endif %}
-                                            {% if studente.get('nome') %}
-                                                {{ studente.nome }}
-                                            {% endif %}
-                                        </div>
-                                    {% endif %}
-                                    {% if studente.get('matricola') %}
-                                        <div class="studente-matricola">
-                                            Matricola: {{ studente.matricola }}
-                                        </div>
-                                    {% endif %}
-                                    {% if studente.get('classe') %}
-                                        <div class="studente-classe">
-                                            Classe: {{ studente.classe }}
-                                        </div>
-                                    {% endif %}
-                                </div>
-                            {% else %}
-                                <div class="studente-info">
-                                    <div class="studente-nome">{{ studente }}</div>
-                                </div>
+                                {% if studente.get('cognome') and studente.get('nome') %}
+                                    {% set nome_studente = studente.cognome + " " + studente.nome %}
+                                {% elif studente.get('cognome') %}
+                                    {% set nome_studente = studente.cognome %}
+                                {% elif studente.get('nome') %}
+                                    {% set nome_studente = studente.nome %}
+                                {% else %}
+                                    {% set nome_studente = studente|string %}
+                                {% endif %}
                             {% endif %}
-                        </div>
-                    {% endfor %}
-                </div>
+                            <div class="studente-card">
+                                <div class="studente-info">
+                                    <div class="studente-nome">{{ nome_studente }}</div>
+                                    {% if studente is mapping %}
+                                        {% if studente.get('matricola') %}
+                                            <div class="studente-matricola">
+                                                Matricola: {{ studente.matricola }}
+                                            </div>
+                                        {% endif %}
+                                        {% if studente.get('classe') %}
+                                            <div class="studente-classe">
+                                                Classe: {{ studente.classe }}
+                                            </div>
+                                        {% endif %}
+                                    {% endif %}
+                                </div>
+                                <div class="presenze-options">
+                                    <label class="radio-option">
+                                        <input type="radio" name="presenza_{{ loop.index0 }}" value="PRESENTE" data-studente="{{ nome_studente }}">
+                                        <span class="radio-label presente">PRESENTE</span>
+                                    </label>
+                                    <label class="radio-option">
+                                        <input type="radio" name="presenza_{{ loop.index0 }}" value="ASSENTE" data-studente="{{ nome_studente }}">
+                                        <span class="radio-label assente">ASSENTE</span>
+                                    </label>
+                                    <label class="radio-option">
+                                        <input type="radio" name="presenza_{{ loop.index0 }}" value="DISPERSO" data-studente="{{ nome_studente }}">
+                                        <span class="radio-label disperso">DISPERSO</span>
+                                    </label>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <div class="save-button-container">
+                        <button type="submit" class="save-button" id="save-btn">
+                            💾 Salva Presenze
+                        </button>
+                        <div id="save-message" class="save-message"></div>
+                    </div>
+                </form>
             {% else %}
                 <div class="empty-container">
                     <p class="empty-message-large">Nessuno studente presente in questa aula</p>
@@ -77,5 +98,73 @@
         </div>
     {% endif %}
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('presenze-form');
+    const saveBtn = document.getElementById('save-btn');
+    const saveMessage = document.getElementById('save-message');
+    
+    if (form) {
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            // Raccogli tutti i dati delle presenze
+            const presenze = {};
+            const radioGroups = form.querySelectorAll('input[type="radio"]:checked');
+            
+            radioGroups.forEach(radio => {
+                const nomeStudente = radio.getAttribute('data-studente');
+                const stato = radio.value;
+                presenze[nomeStudente] = stato;
+            });
+            
+            // Prepara i dati da inviare
+            const data = {
+                classe: '{{ classe }}',
+                presenze: presenze
+            };
+            
+            // Disabilita il pulsante durante il salvataggio
+            saveBtn.disabled = true;
+            saveBtn.textContent = '⏳ Salvataggio...';
+            saveMessage.textContent = '';
+            saveMessage.className = 'save-message';
+            
+            try {
+                const response = await fetch('{{ url_for("salva_presenze") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    saveMessage.textContent = '✅ ' + (result.message || 'Presenze salvate con successo!');
+                    saveMessage.className = 'save-message success';
+                } else {
+                    saveMessage.textContent = '❌ ' + (result.error || 'Errore durante il salvataggio');
+                    saveMessage.className = 'save-message error';
+                }
+            } catch (error) {
+                saveMessage.textContent = '❌ Errore: ' + error.message;
+                saveMessage.className = 'save-message error';
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.textContent = '💾 Salva Presenze';
+                
+                // Nascondi il messaggio dopo 5 secondi
+                setTimeout(() => {
+                    saveMessage.textContent = '';
+                    saveMessage.className = 'save-message';
+                }, 5000);
+            }
+        });
+    }
+});
+</script>
 {% endblock %}
 

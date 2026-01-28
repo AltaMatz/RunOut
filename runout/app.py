@@ -1,7 +1,7 @@
 from datetime import datetime
 import os
 import json
-from flask import Flask, jsonify, render_template  # type: ignore
+from flask import Flask, jsonify, render_template, request  # type: ignore
 import requests #type: ignore
 from dotenv import load_dotenv # type: ignore
 import asyncio
@@ -119,10 +119,18 @@ async def elencoStudenti(classe, aula):
             
             studenti = []
             if isinstance(dati_classe, dict):
-                if 'studenti' in dati_classe:
-                    studenti = dati_classe['studenti']
-                elif isinstance(dati_classe.get('studenti'), list):
-                    studenti = dati_classe['studenti']
+                # Formato 1 (atteso in altri endpoint): {"studenti": [...]}
+                if isinstance(dati_classe.get("studenti"), list):
+                    studenti = dati_classe.get("studenti") or []
+                # Formato 2 (quello che hai mostrato): {"3IA": ["NOME...", ...]}
+                elif classe in dati_classe and isinstance(dati_classe.get(classe), list):
+                    studenti = dati_classe.get(classe) or []
+                else:
+                    # Fallback robusto: prendo il primo valore che sia una lista
+                    for v in dati_classe.values():
+                        if isinstance(v, list):
+                            studenti = v
+                            break
             elif isinstance(dati_classe, list):
                 studenti = dati_classe
             
@@ -163,6 +171,59 @@ def piantina():
 @app.route("/registri-compilati") # ROTTA REGISTRI COMPILATI
 def registri_compilati():
     return render_template("registri_compilati.html")
+
+@app.route("/api/emergenze", methods=["POST"])
+def salva_presenze():
+    """
+    Salva le presenze degli studenti in un file JSON.
+    Struttura del file: presenze.json contiene un array di oggetti, uno per ogni salvataggio.
+    """
+    try:
+        data = request.get_json()
+        
+        if not data or 'classe' not in data or 'presenze' not in data:
+            return jsonify({"error": "Dati mancanti: classe e presenze sono obbligatori"}), 400
+        
+        classe = data['classe']
+        presenze = data['presenze']
+        
+        # Prepara il record da salvare
+        now = datetime.now()
+        record = {
+            "classe": classe,
+            "data": now.strftime("%Y-%m-%d"),
+            "ora": now.strftime("%H:%M:%S"),
+            "timestamp": now.isoformat(),
+            "presenze": presenze
+        }
+        
+        # Leggi il file esistente (se presente)
+        # Usa il percorso relativo alla directory del progetto
+        file_path = os.path.join(os.path.dirname(__file__), "presenze.json")
+        if os.path.exists(file_path):
+            with open(file_path, 'r', encoding='utf-8') as f:
+                try:
+                    all_presenze = json.load(f)
+                except json.JSONDecodeError:
+                    all_presenze = []
+        else:
+            all_presenze = []
+        
+        # Aggiungi il nuovo record
+        all_presenze.append(record)
+        
+        # Salva il file
+        with open(file_path, 'w', encoding='utf-8') as f:
+            json.dump(all_presenze, f, ensure_ascii=False, indent=2)
+        
+        return jsonify({
+            "success": True,
+            "message": f"Presenze salvate per la classe {classe}",
+            "record": record
+        }), 200
+        
+    except Exception as e:
+        return jsonify({"error": f"Errore durante il salvataggio: {str(e)}"}), 500
 
 if __name__ == "__main__":
     app.run(debug=True)
