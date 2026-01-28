@@ -157,7 +157,7 @@ def piantina():
 def registri_compilati():
     return render_template("registri_compilati.html")
 
-@app.route("/api/salva-presenze", methods=["POST"])
+@app.route("/api/emergenze", methods=["POST"])
 def salva_presenze():
     """
     Salva le presenze degli studenti in un file JSON.
