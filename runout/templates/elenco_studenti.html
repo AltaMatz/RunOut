@@ -37,6 +37,22 @@
             {% if studenti|length > 0 %}
                 <form id="presenze-form">
                     <div class="studenti-list-container">
+                        <!-- Column Headers -->
+                        <div class="studenti-row header-row">
+                            <div class="studente-name-col">
+                                <strong>Studente</strong>
+                            </div>
+                            <div class="presenze-col">
+                                <strong>PRESENTE</strong>
+                            </div>
+                            <div class="presenze-col">
+                                <strong>ASSENTE</strong>
+                            </div>
+                            <div class="presenze-col">
+                                <strong>DISPERSO</strong>
+                            </div>
+                        </div>
+
                         {% for studente in studenti %}
                             {% set nome_studente = studente %}
                             {% if studente is mapping %}
@@ -50,35 +66,31 @@
                                     {% set nome_studente = studente|string %}
                                 {% endif %}
                             {% endif %}
-                            <div class="studente-card">
-                                <div class="studente-info">
+                            <div class="studenti-row data-row">
+                                <div class="studente-name-col">
                                     <div class="studente-nome">{{ nome_studente }}</div>
                                     {% if studente is mapping %}
                                         {% if studente.get('matricola') %}
                                             <div class="studente-matricola">
-                                                Matricola: {{ studente.matricola }}
-                                            </div>
-                                        {% endif %}
-                                        {% if studente.get('classe') %}
-                                            <div class="studente-classe">
-                                                Classe: {{ studente.classe }}
+                                                {{ studente.matricola }}
                                             </div>
                                         {% endif %}
                                     {% endif %}
                                 </div>
-                                <div class="presenze-options">
-                                    <label class="radio-option">
-                                        <input type="radio" name="presenza_{{ loop.index0 }}" value="PRESENTE" data-studente="{{ nome_studente }}">
-                                        <span class="radio-label presente">PRESENTE</span>
-                                    </label>
-                                    <label class="radio-option">
-                                        <input type="radio" name="presenza_{{ loop.index0 }}" value="ASSENTE" data-studente="{{ nome_studente }}">
-                                        <span class="radio-label assente">ASSENTE</span>
-                                    </label>
-                                    <label class="radio-option">
-                                        <input type="radio" name="presenza_{{ loop.index0 }}" value="DISPERSO" data-studente="{{ nome_studente }}">
-                                        <span class="radio-label disperso">DISPERSO</span>
-                                    </label>
+                                <div class="presenze-col">
+                                    <button type="button" class="presence-btn" data-status="PRESENTE" data-studente="{{ nome_studente }}" data-index="{{ loop.index0 }}">
+                                        P
+                                    </button>
+                                </div>
+                                <div class="presenze-col">
+                                    <button type="button" class="presence-btn" data-status="ASSENTE" data-studente="{{ nome_studente }}" data-index="{{ loop.index0 }}">
+                                        A
+                                    </button>
+                                </div>
+                                <div class="presenze-col">
+                                    <button type="button" class="presence-btn" data-status="DISPERSO" data-studente="{{ nome_studente }}" data-index="{{ loop.index0 }}">
+                                        D
+                                    </button>
                                 </div>
                             </div>
                         {% endfor %}
@@ -104,19 +116,42 @@ document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('presenze-form');
     const saveBtn = document.getElementById('save-btn');
     const saveMessage = document.getElementById('save-message');
+    const presenceBtns = document.querySelectorAll('.presence-btn');
+    
+    // Track selections per student (by index)
+    const selections = {};
+    
+    presenceBtns.forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            const index = this.getAttribute('data-index');
+            const status = this.getAttribute('data-status');
+            const nomeStudente = this.getAttribute('data-studente');
+            
+            // Remove active class from all buttons for this student
+            const studentBtns = document.querySelectorAll(`button[data-index="${index}"]`);
+            studentBtns.forEach(b => b.classList.remove('active'));
+            
+            // Add active class to clicked button
+            this.classList.add('active');
+            
+            // Store selection
+            selections[index] = {
+                studente: nomeStudente,
+                status: status
+            };
+        });
+    });
     
     if (form) {
         form.addEventListener('submit', async function(e) {
             e.preventDefault();
             
-            // Raccogli tutti i dati delle presenze
+            // Convert selections to presenze format
             const presenze = {};
-            const radioGroups = form.querySelectorAll('input[type="radio"]:checked');
-            
-            radioGroups.forEach(radio => {
-                const nomeStudente = radio.getAttribute('data-studente');
-                const stato = radio.value;
-                presenze[nomeStudente] = stato;
+            Object.values(selections).forEach(sel => {
+                presenze[sel.studente] = sel.status;
             });
             
             // Prepara i dati da inviare
@@ -166,5 +201,98 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
+
+<style>
+.studenti-list-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.studenti-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+    gap: 0;
+    padding: 12px;
+    border-bottom: 1px solid #eee;
+    align-items: center;
+}
+
+.studenti-row.header-row {
+    background-color: #f5f5f5;
+    font-weight: bold;
+    border-bottom: 2px solid #ddd;
+    padding: 16px 12px;
+}
+
+.studenti-row.data-row:last-child {
+    border-bottom: none;
+}
+
+.studenti-row.data-row:hover {
+    background-color: #fafafa;
+}
+
+.studente-name-col {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.studente-nome {
+    font-weight: 500;
+    color: #333;
+}
+
+.studente-matricola {
+    font-size: 0.85em;
+    color: #999;
+}
+
+.presenze-col {
+    display: flex;
+    justify-content: center;
+}
+
+.presence-btn {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    border: 2px solid #ccc;
+    background-color: #f0f0f0;
+    color: #666;
+    font-size: 1.2em;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.presence-btn:hover {
+    border-color: #999;
+    transform: scale(1.05);
+}
+
+.presence-btn.active[data-status="PRESENTE"] {
+    background-color: #4caf50;
+    color: white;
+    border-color: #45a049;
+}
+
+.presence-btn.active[data-status="ASSENTE"] {
+    background-color: #ffc107;
+    color: white;
+    border-color: #ffb300;
+}
+
+.presence-btn.active[data-status="DISPERSO"] {
+    background-color: #f44336;
+    color: white;
+    border-color: #da190b;
+}
+</style>
+
 {% endblock %}
 

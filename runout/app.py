@@ -33,13 +33,13 @@ async def emergenze():
     giorno = 4 #giorno fisso per test
 
     #ora_reale = now.hour
-    ora_reale = 12 #ora fissa per test
+    ora_reale = 13 #ora fissa per test
     if 8 <= ora_reale <= 14:
         ora = ora_reale-7
     else:
         ora = 1  #ora di default quando fuori orario
 
-    sem = asyncio.Semaphore(20)
+    sem = asyncio.Semaphore(50)
     async def fetch_classe(client, aula, API_TOKEN):
         url = f"https://sipal.itispaleocapa.it/api/proxySipal/v1/studenti/classe/{giorno}/{ora}/{aula}"
         headers = {
