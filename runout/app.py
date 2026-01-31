@@ -119,20 +119,8 @@ async def elencoStudenti(classe, aula):
             
             studenti = []
             if isinstance(dati_classe, dict):
-                # Formato 1 (atteso in altri endpoint): {"studenti": [...]}
-                if isinstance(dati_classe.get("studenti"), list):
-                    studenti = dati_classe.get("studenti") or []
-                # Formato 2 (quello che hai mostrato): {"3IA": ["NOME...", ...]}
-                elif classe in dati_classe and isinstance(dati_classe.get(classe), list):
+                if classe in dati_classe and isinstance(dati_classe.get(classe), list):
                     studenti = dati_classe.get(classe) or []
-                else:
-                    # Fallback robusto: prendo il primo valore che sia una lista
-                    for v in dati_classe.values():
-                        if isinstance(v, list):
-                            studenti = v
-                            break
-            elif isinstance(dati_classe, list):
-                studenti = dati_classe
             
             return render_template(
                 "elenco_studenti.html",

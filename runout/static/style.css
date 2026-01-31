@@ -629,11 +629,7 @@ body {
 /* Media queries per tablet e desktop */
 @media (min-width: 768px) {
     body {
-        padding-bottom: 0;
-    }
-    
-    .bottom-nav {
-        display: none;
+        padding-bottom: 70px;
     }
     
     .main-content {
