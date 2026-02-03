@@ -6,10 +6,34 @@ import requests #type: ignore
 from dotenv import load_dotenv # type: ignore
 import asyncio
 import httpx # type:ignore
+from flask_bcrypt import Bcrypt
+from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
+from email_validator import validate_email, EmailNotValidError
 
 app = Flask(__name__)
 load_dotenv()
 API_TOKEN = os.getenv("API_TOKEN") # Carico il token dal file .env
+
+# Initialize extensions
+bcrypt = Bcrypt(app)
+login_manager = LoginManager(app)
+login_manager.login_view = 'login'
+
+# In-memory user store (replace with a database in production)
+users = {}
+
+# User model
+class User(UserMixin):
+    def __init__(self, id, email, password, role):
+        self.id = id
+        self.email = email
+        self.password = password
+        self.role = role
+
+# User loader for Flask-Login
+@login_manager.user_loader
+def load_user(user_id):
+    return users.get(user_id)
 
 # Carica le aule dal file JSON
 with open('floors.json', 'r', encoding='utf-8') as f:
@@ -24,6 +48,73 @@ for floor, rooms in aule_dict.items():
 @app.route("/")
 def home():
     return render_template("home.html")
+
+@app.route("/register", methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        email = request.form.get('email')
+        password = request.form.get('password')
+        role = None
+
+        try:
+            # Validate email
+            valid = validate_email(email)
+            email = valid.email
+
+            # Determine role based on email pattern
+            if email.endswith('@itispaleocapa.it'):
+                if '.studente@' in email:
+                    role = 'studente'
+                elif '.' in email:
+                    role = 'docente'
+
+            if not role:
+                return jsonify({"error": "Email non valida per registrazione."}), 400
+
+            # Hash password
+            hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
+
+            # Create user
+            user_id = len(users) + 1
+            users[user_id] = User(user_id, email, hashed_password, role)
+
+            return jsonify({"success": True, "message": "Registrazione completata."}), 200
+
+        except EmailNotValidError as e:
+            return jsonify({"error": str(e)}), 400
+
+    return render_template('register.html')
+
+@app.route("/login", methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        email = request.form.get('email')
+        password = request.form.get('password')
+
+        # Find user by email
+        user = next((u for u in users.values() if u.email == email), None)
+        if user and bcrypt.check_password_hash(user.password, password):
+            login_user(user)
+            return jsonify({"success": True, "message": "Login effettuato."}), 200
+
+        return jsonify({"error": "Credenziali non valide."}), 401
+
+    return render_template('login.html')
+
+@app.route("/logout")
+@login_required
+def logout():
+    logout_user()
+    return jsonify({"success": True, "message": "Logout effettuato."}), 200
+
+@app.route("/protected")
+@login_required
+def protected():
+    if current_user.role == 'docente':
+        return jsonify({"message": "Benvenuto, docente."})
+    elif current_user.role == 'studente':
+        return jsonify({"message": "Benvenuto, studente."})
+    return jsonify({"error": "Accesso negato."}), 403
 
 @app.route("/emergenze") # ROTTA EMERGENZE
 async def emergenze():
