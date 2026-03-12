@@ -1,13 +1,37 @@
+#implementato login ma non riporta alla dashboard(pagina di prova.)probabile errore nella cartella data
 from datetime import datetime
 import os
 import json
-from flask import Flask, jsonify, render_template, request  # type: ignore
+from flask import Flask, jsonify, render_template, request,session  # type: ignore
 import requests #type: ignore
 from dotenv import load_dotenv # type: ignore
 import asyncio
 import httpx # type:ignore
 
+from shared_modules.sso_middleware import SSOMiddleware, WhitelistManager, RateLimiter
+
 app = Flask(__name__)
+
+whitelist_manager = WhitelistManager("data/whitelist.json")
+
+rate_limiter = RateLimiter(
+    max_sessions_per_user=3,
+    max_sessions_global=100,
+    session_ttl_seconds=28800
+)
+
+sso_middleware = SSOMiddleware(
+    jwt_secret="test",
+    jwt_algorithm="HS256",
+    jwt_issuer="sso-portal",
+    jwt_audience="mia-app",
+    session_timeout=28800,
+    portal_url="http://localhost:5000",
+    whitelist_manager=whitelist_manager,
+    rate_limiter=rate_limiter
+)
+
+
 load_dotenv()
 API_TOKEN = os.getenv("API_TOKEN") # Carico il token dal file .env
 
@@ -212,6 +236,12 @@ def salva_presenze():
         
     except Exception as e:
         return jsonify({"error": f"Errore durante il salvataggio: {str(e)}"}), 500
+
+@app.route("/dashboard")
+@sso_middleware.sso_login_required
+def dashboard():
+    user = session['user'] # type: ignore
+    return f"Ciao {user['email']}"
 
 if __name__ == "__main__":
     app.run(debug=True)
