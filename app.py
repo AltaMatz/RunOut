@@ -1,8 +1,8 @@
-
 from datetime import datetime
 import os
+import secrets
 import json
-from flask import Flask, jsonify, render_template, request,session  # type: ignore
+from flask import Flask, jsonify, render_template, request, session, redirect, url_for  # type: ignore
 import requests #type: ignore
 from dotenv import load_dotenv # type: ignore
 import asyncio
@@ -12,7 +12,18 @@ from shared_modules.sso_middleware import SSOMiddleware, WhitelistManager, RateL
 
 app = Flask(__name__)
 
+load_dotenv()
+
+# Necessario per far funzionare le sessioni Flask (cookie firmati).
+# Impostalo in .env come FLASK_SECRET_KEY=...
+app.secret_key = os.getenv("FLASK_SECRET_KEY", "dev-only-change-me")
+app.permanent_session_lifetime = 28800
+
 whitelist_manager = WhitelistManager("data/whitelist.json")
+
+# Modalità SSO
+SSO_MODE = os.getenv('SSO_MODE', 'dev').lower()
+DEV_USER_EMAIL = os.getenv('DEV_USER_EMAIL', 'vivo.ciro.studente@itispaleocapa.it')
 
 rate_limiter = RateLimiter(
     max_sessions_per_user=3,
@@ -21,18 +32,16 @@ rate_limiter = RateLimiter(
 )
 
 sso_middleware = SSOMiddleware(
-    jwt_secret="test",
+    jwt_secret=os.getenv("SSO_JWT_SECRET", "test"),
     jwt_algorithm="HS256",
-    jwt_issuer="sso-portal",
-    jwt_audience="mia-app",
+    jwt_issuer=os.getenv("SSO_JWT_ISSUER", "sso-portal"),
+    jwt_audience=os.getenv("SSO_JWT_AUDIENCE", "mia-app"),
     session_timeout=28800,
-    portal_url="http://localhost:5000",
+    portal_url=os.getenv("SSO_PORTAL_URL", "http://localhost:5000"),
     whitelist_manager=whitelist_manager,
     rate_limiter=rate_limiter
 )
 
-
-load_dotenv()
 API_TOKEN = os.getenv("API_TOKEN") # Carico il token dal file .env
 
 # Carica le aule dal file JSON
@@ -45,9 +54,102 @@ for floor, rooms in aule_dict.items():
     aula.extend(rooms)
 # print (len(aula))
 
+# ============================================================
+# UTILITY
+# ============================================================
+
+def get_username(email: str) -> str:
+    return email.split('@')[0]
+
 @app.route("/")
 def home():
     return render_template("home.html")
+
+
+
+
+
+# ============================================================
+# ROUTE SSO
+# ============================================================
+
+@app.route('/sso/login')
+def sso_login():
+    """
+    Endpoint SSO. Il portale checkin chiama questa URL passando il JWT.
+    Questo è l'unico punto di ingresso autenticato nell'applicazione.
+    """
+    token = request.args.get('token')
+
+    # --- Modalità DEV: simula il login senza portale reale ---
+    if SSO_MODE == 'dev' and not token:
+        dev_email = request.args.get('email') or DEV_USER_EMAIL
+        app.logger.info(f"DEV MODE: login simulato per {dev_email}")
+        user_data = {
+            'email': dev_email,
+            'name': get_username(dev_email).replace('.', ' ').title(),
+            'googleId': 'dev-user-id',
+            'picture': ''
+        }
+        return _complete_login(user_data)
+
+    if not token:
+        return render_sso_error(
+            "Token SSO mancante. Accedi tramite il portale.",
+            SSO_CONFIG['portal_url']
+        )
+
+    try:
+        user_data = sso_middleware.validate_jwt(token)
+        return _complete_login(user_data)
+    except Exception as e:
+        app.logger.error(f"Errore validazione SSO: {e}")
+        return render_sso_error(
+            f"Token SSO non valido o scaduto. Effettua nuovamente il login.",
+            SSO_CONFIG['portal_url']
+        )
+
+
+def _complete_login(user_data: dict):
+    """
+    Logica comune post-validazione JWT:
+    1. Verifica whitelist
+    2. Verifica rate limit
+    3. Crea sessione e redirect alla dashboard
+    """
+    email = user_data.get('email', '')
+
+    # 1. Controllo whitelist
+    if not whitelist_manager.is_authorized(email):
+        app.logger.warning(f"Accesso negato da whitelist: {email}")
+        return render_sso_error(
+            f"Il tuo account ({email}) non è autorizzato ad accedere a questa applicazione. "
+            "Contatta l'amministratore se ritieni sia un errore.",
+            SSO_CONFIG['portal_url'],
+            status_code=403,
+            title="Account Non Autorizzato",
+            icon="🚫"
+        )
+
+    # 2. Controllo rate limit - registra la nuova sessione
+    session_id = secrets.token_hex(32)
+    allowed, reason = rate_limiter.register_session(session_id, email)
+    if not allowed:
+        app.logger.warning(f"Rate limit raggiunto per: {email}")
+        return render_sso_error(
+            reason,
+            SSO_CONFIG['portal_url'],
+            status_code=429,
+            title="Troppe Sessioni Attive",
+            icon="⏱️"
+        )
+
+    # 3. Crea sessione Flask
+    sso_middleware.create_session(user_data, session, session_id=session_id)
+
+
+    return redirect(url_for('dashboard'))
+
 
 @app.route("/emergenze") # ROTTA EMERGENZE
 async def emergenze():
@@ -238,7 +340,7 @@ def salva_presenze():
         return jsonify({"error": f"Errore durante il salvataggio: {str(e)}"}), 500
 
 @app.route("/dashboard")
-#@sso_middleware.sso_login_required
+@sso_middleware.sso_login_required
 def dashboard():
     if 'user' not in session:
         return "Utente non autenticato", 401
