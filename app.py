@@ -1,4 +1,4 @@
-#implementato login ma non riporta alla dashboard(pagina di prova.)probabile errore nella cartella data
+
 from datetime import datetime
 import os
 import json
