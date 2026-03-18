@@ -238,9 +238,11 @@ def salva_presenze():
         return jsonify({"error": f"Errore durante il salvataggio: {str(e)}"}), 500
 
 @app.route("/dashboard")
-@sso_middleware.sso_login_required
+#@sso_middleware.sso_login_required
 def dashboard():
-    user = session['user'] # type: ignore
+    if 'user' not in session:
+        return "Utente non autenticato", 401
+    user = session['user']
     return f"Ciao {user['email']}"
 
 if __name__ == "__main__":
