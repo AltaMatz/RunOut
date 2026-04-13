@@ -1,10 +1,16 @@
-"""Carica nel database solo i dati presenti in presenze.json."""
+"""Sincronizza automaticamente il DB quando cambia presenze.json."""
 
+import hashlib
 import json
 import sqlite3
+import sys
+import time
+from datetime import datetime
+from pathlib import Path
 
 DB_PATH = "runout.db"
 PRESENZE_FILE = "presenze.json"
+POLL_SECONDS = 2
 
 STATO_MAPPING = {
     "PRESENTE": 1,
@@ -24,11 +30,10 @@ def parse_classe_name(classe_name):
 
 
 def split_full_name(full_name):
-    """Usa il primo token come Cognome e il resto come Nome."""
+    """Primo token in Cognome, il resto in Nome."""
     clean = " ".join(str(full_name).split()).upper()
     if not clean:
         return "", ""
-
     parts = clean.split(" ")
     cognome = parts[0]
     nome = " ".join(parts[1:])
@@ -43,19 +48,25 @@ def load_presenze_json():
     return data
 
 
-def reset_tables(conn):
-    """Pulisce i dati per mantenere nel DB solo quanto presente nel JSON."""
+def ensure_support_tables(conn):
     cursor = conn.cursor()
-    cursor.execute("DELETE FROM Registri")
-    cursor.execute("DELETE FROM Classi")
-    cursor.execute("DELETE FROM Stati")
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS SyncLog (
+            RecordKey TEXT PRIMARY KEY,
+            Classe TEXT NOT NULL,
+            Timestamp TEXT,
+            ImportedAt TEXT NOT NULL
+        )
+        """
+    )
     conn.commit()
 
 
-def insert_stati(conn):
+def insert_stati_if_missing(conn):
     cursor = conn.cursor()
     cursor.executemany(
-        "INSERT INTO Stati (StatoID, NomeStato, Descrizione) VALUES (?, ?, ?)",
+        "INSERT OR IGNORE INTO Stati (StatoID, NomeStato, Descrizione) VALUES (?, ?, ?)",
         [
             (1, "Presente", "Studente presente"),
             (2, "Assente", "Studente assente"),
@@ -78,75 +89,153 @@ def upsert_classe(conn, classe_name):
     return cursor.lastrowid
 
 
-def build_latest_status_by_student(records):
-    """Tiene l'ultimo stato disponibile per ogni studente nella classe."""
-    ordered = sorted(records, key=lambda r: r.get("timestamp", ""))
-    by_student = {}
-
-    for record in ordered:
-        classe = str(record.get("classe", "")).upper().strip()
-        presenze = record.get("presenze", {})
-        if not classe or not isinstance(presenze, dict):
-            continue
-
-        for full_name, stato in presenze.items():
-            stato_norm = str(stato).upper().strip()
-            if stato_norm not in STATO_MAPPING:
-                continue
-            key = (classe, " ".join(str(full_name).split()).upper())
-            by_student[key] = stato_norm
-
-    return by_student
-
-
-def insert_registri_from_json(conn, latest_status):
+def next_student_id(conn):
     cursor = conn.cursor()
-    next_id = cursor.execute("SELECT COALESCE(MAX(StudenteID), 0) FROM Registri").fetchone()[0] + 1
-    inserted = 0
-
-    for (classe_name, full_name), stato_norm in sorted(latest_status.items()):
-        classe_id = upsert_classe(conn, classe_name)
-        nome, cognome = split_full_name(full_name)
-        stato_id = STATO_MAPPING[stato_norm]
-
-        cursor.execute(
-            """
-            INSERT INTO Registri (StudenteID, Nome, Cognome, Classe, Stato)
-            VALUES (?, ?, ?, ?, ?)
-            """,
-            (next_id, nome, cognome, classe_id, stato_id),
-        )
-        next_id += 1
-        inserted += 1
-
-    conn.commit()
-    return inserted
+    return cursor.execute("SELECT COALESCE(MAX(StudenteID), 0) + 1 FROM Registri").fetchone()[0]
 
 
-def sync_presenze_only_json():
-    print("\n🔄 Caricamento DB da presenze.json (solo dati JSON)...\n")
+def make_record_key(record):
+    payload = {
+        "classe": str(record.get("classe", "")).strip().upper(),
+        "timestamp": str(record.get("timestamp", "")).strip(),
+        "presenze": record.get("presenze", {}),
+    }
+    raw = json.dumps(payload, ensure_ascii=False, sort_keys=True)
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+
+
+def record_already_imported(conn, record_key):
+    cursor = conn.cursor()
+    row = cursor.execute("SELECT 1 FROM SyncLog WHERE RecordKey = ?", (record_key,)).fetchone()
+    return row is not None
+
+
+def mark_record_imported(conn, record_key, classe, timestamp_value):
+    cursor = conn.cursor()
+    cursor.execute(
+        "INSERT INTO SyncLog (RecordKey, Classe, Timestamp, ImportedAt) VALUES (?, ?, ?, ?)",
+        (record_key, classe, timestamp_value, datetime.now().isoformat()),
+    )
+
+
+def upsert_studente(conn, classe_id, nome, cognome, stato_id, new_id):
+    cursor = conn.cursor()
+    row = cursor.execute(
+        """
+        SELECT StudenteID
+        FROM Registri
+        WHERE Classe = ? AND UPPER(Cognome) = ? AND UPPER(Nome) = ?
+        """,
+        (classe_id, cognome.upper(), nome.upper()),
+    ).fetchone()
+
+    if row:
+        cursor.execute("UPDATE Registri SET Stato = ? WHERE StudenteID = ?", (stato_id, row[0]))
+        return False
+
+    cursor.execute(
+        """
+        INSERT INTO Registri (StudenteID, Nome, Cognome, Classe, Stato)
+        VALUES (?, ?, ?, ?, ?)
+        """,
+        (new_id, nome, cognome, classe_id, stato_id),
+    )
+    return True
+
+
+def sync_once():
     records = load_presenze_json()
+    ordered = sorted(records, key=lambda r: str(r.get("timestamp", "")))
 
     conn = sqlite3.connect(DB_PATH)
     try:
-        reset_tables(conn)
-        insert_stati(conn)
+        ensure_support_tables(conn)
+        insert_stati_if_missing(conn)
 
-        latest_status = build_latest_status_by_student(records)
-        studenti = insert_registri_from_json(conn, latest_status)
+        inserted_students = 0
+        updated_students = 0
+        new_records = 0
+        skipped_records = 0
+        next_id = next_student_id(conn)
 
-        cursor = conn.cursor()
-        classi = cursor.execute("SELECT COUNT(*) FROM Classi").fetchone()[0]
-        registri = cursor.execute("SELECT COUNT(*) FROM Registri").fetchone()[0]
+        for record in ordered:
+            classe = str(record.get("classe", "")).strip().upper()
+            presenze = record.get("presenze", {})
+            timestamp_value = str(record.get("timestamp", "")).strip()
 
-        print("✅ Completato")
-        print(f"   Record presenze letti: {len(records)}")
-        print(f"   Classi inserite: {classi}")
-        print(f"   Studenti inseriti: {studenti}")
-        print(f"   Registri in tabella: {registri}\n")
+            if not classe or not isinstance(presenze, dict):
+                continue
+
+            record_key = make_record_key(record)
+            if record_already_imported(conn, record_key):
+                skipped_records += 1
+                continue
+
+            classe_id = upsert_classe(conn, classe)
+
+            for full_name, stato in presenze.items():
+                stato_norm = str(stato).upper().strip()
+                if stato_norm not in STATO_MAPPING:
+                    continue
+
+                nome, cognome = split_full_name(full_name)
+                was_inserted = upsert_studente(
+                    conn,
+                    classe_id,
+                    nome,
+                    cognome,
+                    STATO_MAPPING[stato_norm],
+                    next_id,
+                )
+                if was_inserted:
+                    inserted_students += 1
+                    next_id += 1
+                else:
+                    updated_students += 1
+
+            mark_record_imported(conn, record_key, classe, timestamp_value)
+            new_records += 1
+
+        conn.commit()
+
+        print("✅ Sync eseguita")
+        print(f"   Record nuovi: {new_records}")
+        print(f"   Record già importati: {skipped_records}")
+        print(f"   Studenti inseriti: {inserted_students}")
+        print(f"   Studenti aggiornati: {updated_students}")
     finally:
         conn.close()
 
 
+def watch_presenze_file():
+    file_path = Path(PRESENZE_FILE)
+    print(f"👀 Monitoraggio attivo su {file_path.name} (CTRL+C per uscire)")
+
+    last_mtime = None
+    while True:
+        try:
+            if not file_path.exists():
+                print("⚠️ presenze.json non trovato, attendo...")
+                time.sleep(POLL_SECONDS)
+                continue
+
+            current_mtime = file_path.stat().st_mtime
+            if last_mtime is None or current_mtime > last_mtime:
+                print("\n🔄 File aggiornato, avvio sincronizzazione...")
+                sync_once()
+                last_mtime = current_mtime
+
+            time.sleep(POLL_SECONDS)
+        except KeyboardInterrupt:
+            print("\n👋 Monitoraggio interrotto")
+            break
+        except Exception as e:
+            print(f"❌ Errore nel monitoraggio: {e}")
+            time.sleep(POLL_SECONDS)
+
+
 if __name__ == "__main__":
-    sync_presenze_only_json()
+    if len(sys.argv) > 1 and sys.argv[1] == "--once":
+        sync_once()
+    else:
+        watch_presenze_file()
