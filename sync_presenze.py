@@ -24,9 +24,15 @@ def parse_classe_name(classe_name):
 
 
 def split_full_name(full_name):
-    """Salva il nome completo in Cognome per evitare split ambigui."""
+    """Usa il primo token come Cognome e il resto come Nome."""
     clean = " ".join(str(full_name).split()).upper()
-    return "", clean
+    if not clean:
+        return "", ""
+
+    parts = clean.split(" ")
+    cognome = parts[0]
+    nome = " ".join(parts[1:])
+    return nome, cognome
 
 
 def load_presenze_json():
