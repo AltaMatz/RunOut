@@ -62,7 +62,7 @@ async def emergenze():
     giorno = 4 #giorno fisso per test
 
     #ora_reale = now.hour
-    ora_reale = 13 #ora fissa per test
+    ora_reale = 8 #ora fissa per test
     if 8 <= ora_reale <= 14:
         ora = ora_reale-7
     else:
