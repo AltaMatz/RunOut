@@ -187,7 +187,107 @@ def piantina():
 
 @app.route("/registri-compilati") # ROTTA REGISTRI COMPILATI
 def registri_compilati():
-    return render_template("registri_compilati.html")
+    import sqlite3
+    
+    db_path = "runout.db"
+    registri_per_classe = {}
+    compilazioni_per_classe = {}
+    
+    try:
+        conn = sqlite3.connect(db_path)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        
+        # Query che recupera i registri raggruppati per classe con informazioni di stato
+        query = """
+        SELECT 
+            c.ClasseID,
+            c.Anno,
+            c.Sezione,
+            r.StudenteID,
+            r.Nome,
+            r.Cognome,
+            r.Stato,
+            s.NomeStato,
+            s.Descrizione
+        FROM Registri r
+        JOIN Classi c ON r.Classe = c.ClasseID
+        LEFT JOIN Stati s ON r.Stato = s.StatoID
+        ORDER BY c.Anno ASC, c.Sezione ASC, r.Cognome ASC, r.Nome ASC
+        """
+        
+        cursor.execute(query)
+        rows = cursor.fetchall()
+
+        cursor.execute(
+            """
+            SELECT sl1.Classe, sl1.Data, sl1.Ora, sl1.Timestamp
+            FROM SyncLog sl1
+            WHERE sl1.Timestamp = (
+                SELECT MAX(sl2.Timestamp)
+                FROM SyncLog sl2
+                WHERE sl2.Classe = sl1.Classe
+            )
+            """
+        )
+        sync_rows = cursor.fetchall()
+        for row in sync_rows:
+            data_value = row["Data"] or ''
+            ora_value = row["Ora"] or ''
+
+            if data_value:
+                try:
+                    data_value = datetime.strptime(data_value, "%Y-%m-%d").strftime("%d/%m/%Y")
+                except ValueError:
+                    pass
+
+            if ora_value:
+                try:
+                    ora_value = datetime.strptime(ora_value, "%H:%M:%S").strftime("%H:%M")
+                except ValueError:
+                    pass
+
+            compilazioni_per_classe[str(row["Classe"]).strip().upper()] = {
+                'data': data_value,
+                'ora': ora_value,
+                'timestamp': row["Timestamp"] or ''
+            }
+        
+        # Raggruppa i dati per classe
+        for row in rows:
+            classe_key = f"{row['Anno']}{row['Sezione']}"
+            
+            if classe_key not in registri_per_classe:
+                registri_per_classe[classe_key] = {
+                    'anno': row['Anno'],
+                    'sezione': row['Sezione'],
+                    'studenti': [],
+                    'data_compilazione': compilazioni_per_classe.get(classe_key, {}).get('data', ''),
+                    'ora_compilazione': compilazioni_per_classe.get(classe_key, {}).get('ora', '')
+                }
+            
+            studente = {
+                'nome': row['Nome'] or '',
+                'cognome': row['Cognome'] or '',
+                'stato': row['NomeStato'] or 'Non definito',
+                'stato_id': row['Stato'],
+                'descrizione': row['Descrizione'] or ''
+            }
+            registri_per_classe[classe_key]['studenti'].append(studente)
+
+            if not registri_per_classe[classe_key].get('data_compilazione'):
+                registri_per_classe[classe_key]['data_compilazione'] = compilazioni_per_classe.get(classe_key, {}).get('data', '')
+            if not registri_per_classe[classe_key].get('ora_compilazione'):
+                registri_per_classe[classe_key]['ora_compilazione'] = compilazioni_per_classe.get(classe_key, {}).get('ora', '')
+        
+        # Ordina il dizionario per anno (crescente) e sezione (alfabetica)
+        registri_per_classe = dict(sorted(registri_per_classe.items(), key=lambda x: (x[1]['anno'], x[1]['sezione'])))
+        
+        conn.close()
+    except Exception as e:
+        print(f"Errore nel recupero dei registri: {e}")
+    
+    return render_template("registri_compilati.html", registri_per_classe=registri_per_classe)
 
 @app.route("/api/emergenze", methods=["POST"])
 def salva_presenze():
@@ -203,6 +303,41 @@ def salva_presenze():
         
         classe = data['classe']
         presenze = data['presenze']
+        studenti_attesi = data.get('studenti_attesi', [])
+        stati_validi = {"PRESENTE", "ASSENTE", "DISPERSO"}
+        
+        # Controlla che tutti gli studenti abbiano uno stato compilato
+        if not isinstance(presenze, dict) or len(presenze) == 0:
+            return jsonify({"error": "Nessuno studente presente nella classe"}), 400
+        
+        # Verifica che il payload contenga tutti gli studenti attesi
+        studenti_mancanti = []
+        for nome_studente in studenti_attesi:
+            if nome_studente not in presenze:
+                studenti_mancanti.append(nome_studente)
+            elif not presenze.get(nome_studente) or str(presenze.get(nome_studente)).strip() == "":
+                studenti_mancanti.append(nome_studente)
+        
+        if studenti_mancanti:
+            return jsonify({
+                "error": "Compilazione incompleta",
+                "message": f"I seguenti studenti non hanno uno stato assegnato: {', '.join(studenti_mancanti)}",
+                "studenti": studenti_mancanti
+            }), 400
+
+        # Verifica che ogni stato sia uno dei valori ammessi
+        stati_non_validi = []
+        for nome_studente, stato in presenze.items():
+            stato_norm = str(stato).strip().upper()
+            if stato_norm not in stati_validi:
+                stati_non_validi.append(nome_studente)
+
+        if stati_non_validi:
+            return jsonify({
+                "error": "Stati non validi",
+                "message": f"Gli stati di questi studenti non sono validi: {', '.join(stati_non_validi)}",
+                "studenti": stati_non_validi
+            }), 400
         
         # Prepara il record da salvare
         now = datetime.now()

@@ -120,8 +120,13 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Track selections per student (by index)
     const selections = {};
+    const studentiAttesi = [];
     
     presenceBtns.forEach(btn => {
+        if (!studentiAttesi.includes(btn.getAttribute('data-studente'))) {
+            studentiAttesi.push(btn.getAttribute('data-studente'));
+        }
+
         btn.addEventListener('click', function(e) {
             e.preventDefault();
             
@@ -148,8 +153,11 @@ document.addEventListener('DOMContentLoaded', function() {
         form.addEventListener('submit', async function(e) {
             e.preventDefault();
             
-            // Convert selections to presenze format
+            // Convert selections to presenze format and include every student
             const presenze = {};
+            studentiAttesi.forEach(nomeStudente => {
+                presenze[nomeStudente] = '';
+            });
             Object.values(selections).forEach(sel => {
                 presenze[sel.studente] = sel.status;
             });
@@ -157,6 +165,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Prepara i dati da inviare
             const data = {
                 classe: '{{ classe }}',
+                studenti_attesi: studentiAttesi,
                 presenze: presenze
             };
             

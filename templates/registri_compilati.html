@@ -7,6 +7,105 @@
     <div class="content-section">
         <h2>REGISTRI COMPILATI</h2>
         <p>Consulta l'archivio dei registri compilati e visualizza i dati storici delle compilazioni.</p>
+        
+        {% if registri_per_classe %}
+            {% for classe_key, classe_data in registri_per_classe.items() %}
+            <div style="margin-top: 30px; margin-bottom: 30px; border: 1px solid #ddd; border-radius: 8px; overflow: hidden;">
+                <div style="background-color: #007bff; color: white; padding: 15px; font-size: 18px; font-weight: bold;">
+                    Classe {{ classe_data.anno }}{{ classe_data.sezione }}
+                </div>
+                
+                {% if classe_data.studenti %}
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background-color: #f8f9fa; border-bottom: 2px solid #ddd;">
+                            <th style="padding: 12px; text-align: left; border-right: 1px solid #ddd;">Cognome</th>
+                            <th style="padding: 12px; text-align: left; border-right: 1px solid #ddd;">Nome</th>
+                            <th style="padding: 12px; text-align: left;">Stato</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for studente in classe_data.studenti %}
+                        <tr style="border-bottom: 1px solid #ddd;">
+                            <td style="padding: 12px; border-right: 1px solid #ddd;">{{ studente.cognome }}</td>
+                            <td style="padding: 12px; border-right: 1px solid #ddd;">{{ studente.nome }}</td>
+                            <td style="padding: 12px;">
+                                {% if studente.stato_id == 1 %}
+                                    <span style="padding: 5px 10px; border-radius: 4px; font-weight: bold; background-color: #28a745; color: white;">
+                                        {{ studente.stato }}
+                                    </span>
+                                {% elif studente.stato_id == 2 %}
+                                    <span style="padding: 5px 10px; border-radius: 4px; font-weight: bold; background-color: #ffc107; color: black;">
+                                        {{ studente.stato }}
+                                    </span>
+                                {% elif studente.stato_id == 3 %}
+                                    <span style="padding: 5px 10px; border-radius: 4px; font-weight: bold; background-color: #dc3545; color: white;">
+                                        {{ studente.stato }}
+                                    </span>
+                                {% else %}
+                                    <span style="padding: 5px 10px; border-radius: 4px; font-weight: bold; background-color: #6c757d; color: white;">
+                                        {{ studente.stato }}
+                                    </span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div style="padding: 20px; text-align: center; color: #666;">
+                    Nessuno studente registrato in questa classe.
+                </div>
+                {% endif %}
+
+                <div style="
+                    background: linear-gradient(135deg, #f8f9fa 0%, #eef4ff 100%);
+                    border-top: 1px solid #dde6f3;
+                    padding: 14px 18px;
+                    display: flex;
+                    justify-content: flex-end;
+                    align-items: center;
+                    gap: 12px;
+                    flex-wrap: wrap;
+                ">
+                    <div style="
+                        display: inline-flex;
+                        align-items: center;
+                        gap: 8px;
+                        padding: 8px 12px;
+                        background: rgba(255, 255, 255, 0.85);
+                        border: 1px solid #d9e2f2;
+                        border-radius: 999px;
+                        color: #495057;
+                        font-size: 0.95rem;
+                        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+                    ">
+                        <strong>Data:</strong>
+                        <span>{{ classe_data.data_compilazione or 'Non disponibile' }}</span>
+                    </div>
+                    <div style="
+                        display: inline-flex;
+                        align-items: center;
+                        gap: 8px;
+                        padding: 8px 12px;
+                        background: rgba(255, 255, 255, 0.85);
+                        border: 1px solid #d9e2f2;
+                        border-radius: 999px;
+                        color: #495057;
+                        font-size: 0.95rem;
+                        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+                    ">
+                        <strong>Orario:</strong>
+                        <span>{{ classe_data.ora_compilazione or 'Non disponibile' }}</span>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+        <div style="padding: 20px; text-align: center; color: #666; background-color: #f8f9fa; border-radius: 8px; margin-top: 20px;">
+            Nessun registro compilato disponibile.
+        </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

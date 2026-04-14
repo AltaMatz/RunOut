@@ -56,10 +56,18 @@ def ensure_support_tables(conn):
             RecordKey TEXT PRIMARY KEY,
             Classe TEXT NOT NULL,
             Timestamp TEXT,
+            Data TEXT,
+            Ora TEXT,
             ImportedAt TEXT NOT NULL
         )
         """
     )
+    cursor.execute("PRAGMA table_info(SyncLog)")
+    existing_columns = {row[1] for row in cursor.fetchall()}
+    if "Data" not in existing_columns:
+        cursor.execute("ALTER TABLE SyncLog ADD COLUMN Data TEXT")
+    if "Ora" not in existing_columns:
+        cursor.execute("ALTER TABLE SyncLog ADD COLUMN Ora TEXT")
     conn.commit()
 
 
@@ -110,11 +118,11 @@ def record_already_imported(conn, record_key):
     return row is not None
 
 
-def mark_record_imported(conn, record_key, classe, timestamp_value):
+def mark_record_imported(conn, record_key, classe, timestamp_value, data_value, ora_value):
     cursor = conn.cursor()
     cursor.execute(
-        "INSERT INTO SyncLog (RecordKey, Classe, Timestamp, ImportedAt) VALUES (?, ?, ?, ?)",
-        (record_key, classe, timestamp_value, datetime.now().isoformat()),
+        "INSERT INTO SyncLog (RecordKey, Classe, Timestamp, Data, Ora, ImportedAt) VALUES (?, ?, ?, ?, ?, ?)",
+        (record_key, classe, timestamp_value, data_value, ora_value, datetime.now().isoformat()),
     )
 
 
@@ -152,23 +160,26 @@ def sync_once():
         ensure_support_tables(conn)
         insert_stati_if_missing(conn)
 
+        # Allinea il database allo stato corrente del JSON.
+        # Questo rimuove anche studenti/classi che non sono più presenti nel file.
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM Registri")
+        cursor.execute("DELETE FROM Classi")
+        cursor.execute("DELETE FROM SyncLog")
+
         inserted_students = 0
         updated_students = 0
         new_records = 0
-        skipped_records = 0
         next_id = next_student_id(conn)
 
         for record in ordered:
             classe = str(record.get("classe", "")).strip().upper()
             presenze = record.get("presenze", {})
             timestamp_value = str(record.get("timestamp", "")).strip()
+            data_value = str(record.get("data", "")).strip()
+            ora_value = str(record.get("ora", "")).strip()
 
             if not classe or not isinstance(presenze, dict):
-                continue
-
-            record_key = make_record_key(record)
-            if record_already_imported(conn, record_key):
-                skipped_records += 1
                 continue
 
             classe_id = upsert_classe(conn, classe)
@@ -193,14 +204,15 @@ def sync_once():
                 else:
                     updated_students += 1
 
-            mark_record_imported(conn, record_key, classe, timestamp_value)
             new_records += 1
+
+            record_key = make_record_key(record)
+            mark_record_imported(conn, record_key, classe, timestamp_value, data_value, ora_value)
 
         conn.commit()
 
         print("✅ Sync eseguita")
         print(f"   Record nuovi: {new_records}")
-        print(f"   Record già importati: {skipped_records}")
         print(f"   Studenti inseriti: {inserted_students}")
         print(f"   Studenti aggiornati: {updated_students}")
     finally:
