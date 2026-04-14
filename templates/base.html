@@ -14,6 +14,12 @@
             <div class="nav-logo">
                 <h1>Runout</h1>
             </div>
+            {% if session.get('user') %}
+            <div class="nav-user">
+                <span class="user-email">{{ session.user.email }}</span>
+                <a href="{{ url_for('logout') }}" class="logout-btn">🚪 Esci</a>
+            </div>
+            {% endif %}
         </div>
     </nav>
 
@@ -71,6 +77,70 @@
             });
         });
     </script>
+
+    <style>
+        .nav-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            height: 100%;
+        }
+
+        .nav-user {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-left: auto;
+        }
+
+        .user-email {
+            color: white;
+            font-size: 14px;
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .logout-btn {
+            background: #ff6b6b;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+            display: inline-block;
+        }
+
+        .logout-btn:hover {
+            background: #ff5252;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(255, 107, 107, 0.3);
+        }
+
+        .logout-btn:active {
+            transform: translateY(0);
+        }
+
+        @media (max-width: 600px) {
+            .user-email {
+                display: none;
+            }
+
+            .logout-btn {
+                padding: 8px 12px;
+                font-size: 13px;
+            }
+        }
+    </style>
 </body>
 </html>
 

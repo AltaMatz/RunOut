@@ -2,47 +2,55 @@ from datetime import datetime
 import os
 import secrets
 import json
-from flask import Flask, jsonify, render_template, request, session, redirect, url_for  # type: ignore
+from functools import wraps
+from flask import Flask, jsonify, render_template, render_template_string, request, session, redirect, url_for  # type: ignore
 import requests #type: ignore
 from dotenv import load_dotenv # type: ignore
 import asyncio
 import httpx # type:ignore
 
-from shared_modules.sso_middleware import SSOMiddleware, WhitelistManager, RateLimiter
+from config import (
+    FLASK_SECRET_KEY, SESSION_LIFETIME_SECONDS,
+    SSO_MODE, DEV_USER_EMAIL, DEV_DOCENTE_EMAIL,
+    SSO_JWT_SECRET, SSO_JWT_ISSUER, SSO_JWT_AUDIENCE, SSO_PORTAL_URL,
+    MAX_SESSIONS_PER_USER, MAX_SESSIONS_GLOBAL,
+    WHITELIST_FILE, WHITELIST_STUDENTI_FILE, API_TOKEN, DEBUG, SSO_CONFIG
+)
+from shared_modules.sso_middleware import SSOMiddleware, WhitelistManager, RateLimiter, RoleManager
 
 app = Flask(__name__)
 
-load_dotenv()
+# Configurazione Flask
+app.secret_key = FLASK_SECRET_KEY
+app.permanent_session_lifetime = SESSION_LIFETIME_SECONDS
+app.debug = DEBUG
 
-# Necessario per far funzionare le sessioni Flask (cookie firmati).
-# Impostalo in .env come FLASK_SECRET_KEY=...
-app.secret_key = os.getenv("FLASK_SECRET_KEY", "dev-only-change-me")
-app.permanent_session_lifetime = 28800
+# Inizializza manager della whitelist
+whitelist_manager = WhitelistManager(WHITELIST_FILE)
 
-whitelist_manager = WhitelistManager("data/whitelist.json")
+# Inizializza role manager (per assegnare ruoli in base all'email)
+role_manager = RoleManager(WHITELIST_FILE, WHITELIST_STUDENTI_FILE)
 
-# Modalità SSO
-SSO_MODE = os.getenv('SSO_MODE', 'dev').lower()
-DEV_USER_EMAIL = os.getenv('DEV_USER_EMAIL', 'vivo.ciro.studente@itispaleocapa.it')
-
+# Inizializza rate limiter
 rate_limiter = RateLimiter(
-    max_sessions_per_user=3,
-    max_sessions_global=100,
-    session_ttl_seconds=28800
+    max_sessions_per_user=MAX_SESSIONS_PER_USER,
+    max_sessions_global=MAX_SESSIONS_GLOBAL,
+    session_ttl_seconds=SESSION_LIFETIME_SECONDS
 )
 
+# Inizializza middleware SSO
 sso_middleware = SSOMiddleware(
-    jwt_secret=os.getenv("SSO_JWT_SECRET", "test"),
+    jwt_secret=SSO_JWT_SECRET,
     jwt_algorithm="HS256",
-    jwt_issuer=os.getenv("SSO_JWT_ISSUER", "sso-portal"),
-    jwt_audience=os.getenv("SSO_JWT_AUDIENCE", "mia-app"),
-    session_timeout=28800,
-    portal_url=os.getenv("SSO_PORTAL_URL", "http://localhost:5000"),
+    jwt_issuer=SSO_JWT_ISSUER,
+    jwt_audience=SSO_JWT_AUDIENCE,
+    session_timeout=SESSION_LIFETIME_SECONDS,
+    portal_url=SSO_PORTAL_URL,
     whitelist_manager=whitelist_manager,
     rate_limiter=rate_limiter
 )
 
-API_TOKEN = os.getenv("API_TOKEN") # Carico il token dal file .env
+API_TOKEN = API_TOKEN  # Carico il token dal config
 
 # Carica le aule dal file JSON
 with open('floors.json', 'r', encoding='utf-8') as f:
@@ -80,7 +88,12 @@ async def _fetch_emergenze_data():
 
     try:
         now = datetime.now()
-        giorno = now.weekday() + 1  # Lunedì=1 … Venerdì=5
+        giorno = now.weekday() + 1  # Lunedì=1 … Venerdì=5 (per API)
+        
+        # Nomi dei giorni della settimana
+        giorni_nomi = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica']
+        giorno_nome = giorni_nomi[now.weekday()]  # Nome del giorno della settimana
+        
         ora_reale = now.hour
         ora = (ora_reale - 7) if 8 <= ora_reale <= 14 else 1
 
@@ -129,6 +142,7 @@ async def _fetch_emergenze_data():
         _emergenze_cache.update({
             "risultati_filtrati": risultati_filtrati,
             "giorno": giorno,
+            "giorno_nome": giorno_nome,
             "ora": ora,
             "total_aule": len(aula),
             "num_with_class": num_with_class,
@@ -165,18 +179,105 @@ def _refresh_cache_in_background():
 
 
 # ============================================================
-# UTILITY
+# UTILITY & DECORATORS
 # ============================================================
 
 def get_username(email: str) -> str:
     return email.split('@')[0]
 
+
+def role_required(allowed_roles):
+    """
+    Decorator per proteggere le rotte in base al ruolo dell'utente.
+    
+    Uso:
+        @role_required('docente')
+        def my_route():
+            ...
+    """
+    if isinstance(allowed_roles, str):
+        allowed_roles = [allowed_roles]
+    
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            user = session.get('user', None)
+            if not user:
+                app.logger.warning("Accesso senza sessione")
+                return redirect(url_for('home'))
+            
+            user_role = user.get('role', 'guest')
+            if user_role not in allowed_roles:
+                app.logger.warning(f"Accesso vietato per ruolo '{user_role}' a {request.path}")
+                return render_template_string(
+                    """
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <meta charset="UTF-8">
+                        <title>Accesso Vietato</title>
+                        <style>
+                            body { font-family: Arial; background: #f5f5f5; padding: 20px; }
+                            .error-container { max-width: 600px; margin: 100px auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); text-align: center; }
+                            .error-icon { font-size: 64px; margin-bottom: 20px; }
+                            h1 { color: #d32f2f; margin: 0 0 12px; }
+                            p { color: #666; margin: 12px 0; }
+                            .user-role { background: #f0f0f0; padding: 12px; border-radius: 6px; margin: 20px 0; font-family: monospace; }
+                            a { display: inline-block; margin-top: 20px; padding: 10px 24px; background: #667eea; color: white; text-decoration: none; border-radius: 6px; }
+                            a:hover { background: #5568d3; }
+                        </style>
+                    </head>
+                    <body>
+                        <div class="error-container">
+                            <div class="error-icon">🚫</div>
+                            <h1>Accesso Vietato</h1>
+                            <p>Non hai il permesso di accedere a questa pagina.</p>
+                            <p>Ruoli consentiti: <strong>{{ allowed }}</strong></p>
+                            <div class="user-role">Il tuo ruolo: <strong>{{ your_role }}</strong></div>
+                            <a href="{{ home_url }}">← Torna alla Home</a>
+                        </div>
+                    </body>
+                    </html>
+                    """,
+                    allowed=", ".join(allowed_roles),
+                    your_role=user_role,
+                    home_url=url_for('home')
+                ), 403
+            
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
+
 @app.route("/")
 def home():
-    return render_template("home.html")
+    """Home page - mostra scelta email in dev mode, oppure home normale."""
+    user = session.get('user', None)
+    
+    # In dev mode, mostra direttamente la scelta di email se non autenticato
+    if SSO_MODE == 'dev' and not user:
+        return render_template("dev_login_choice.html",
+                             student_email=DEV_USER_EMAIL,
+                             docente_email=DEV_DOCENTE_EMAIL)
+    
+    # Altrimenti mostra la home normale
+    return render_template("home.html", user=user, sso_mode=SSO_MODE)
 
 
+# ============================================================
+# DEV MODE - SCELTA EMAIL
+# ============================================================
 
+@app.route('/dev/login-choice')
+def dev_login_choice():
+    """
+    (Solo in DEV mode) Pagina per scegliere quale email usare per il login di test.
+    """
+    if SSO_MODE != 'dev':
+        return redirect(url_for('home'))
+    
+    return render_template("dev_login_choice.html", 
+                         student_email=DEV_USER_EMAIL,
+                         docente_email=DEV_DOCENTE_EMAIL)
 
 
 # ============================================================
@@ -229,9 +330,10 @@ def _complete_login(user_data: dict):
     """
     email = user_data.get('email', '')
 
-    # 1. Controllo whitelist
-    if not whitelist_manager.is_authorized(email):
-        app.logger.warning(f"Accesso negato da whitelist: {email}")
+    # 1. Determina il ruolo e verifica autorizzazione
+    role, is_authorized = role_manager.get_role(email)
+    if not is_authorized:
+        app.logger.warning(f"Accesso negato - Utente non autorizzato: {email} (role: {role})")
         return render_sso_error(
             f"Il tuo account ({email}) non è autorizzato ad accedere a questa applicazione. "
             "Contatta l'amministratore se ritieni sia un errore.",
@@ -240,6 +342,8 @@ def _complete_login(user_data: dict):
             title="Account Non Autorizzato",
             icon="🚫"
         )
+    
+    app.logger.info(f"Utente autorizzato: {email} con ruolo '{role}'")
 
     # 2. Controllo rate limit - registra la nuova sessione
     session_id = secrets.token_hex(32)
@@ -254,8 +358,8 @@ def _complete_login(user_data: dict):
             icon="⏱️"
         )
 
-    # 3. Crea sessione Flask
-    sso_middleware.create_session(user_data, session, session_id=session_id)
+    # 3. Crea sessione Flask (con ruolo)
+    sso_middleware.create_session(user_data, session, session_id=session_id, role=role)
 
     # 4. Precarica i dati emergenze in background (se la cache è scaduta)
     if _cache_is_stale():
@@ -264,7 +368,18 @@ def _complete_login(user_data: dict):
     return redirect(url_for('dashboard'))
 
 
+@app.route('/logout')
+def logout():
+    """Logout - termina la sessione e reindirizza al portale SSO o home."""
+    if session.get('session_id'):
+        rate_limiter.remove_session(session.get('session_id'))
+    session.clear()
+    app.logger.info("Logout effettuato")
+    return redirect(url_for('home'))
+
+
 @app.route("/emergenze") # ROTTA EMERGENZE
+@role_required('docente')  # Solo docenti possono accedere
 def emergenze():
     # Se la cache è vuota (primo avvio senza login), avvia il fetch e aspetta
     if _emergenze_cache["last_update"] is None:
@@ -284,6 +399,7 @@ def emergenze():
         "emergenze.html",
         risultati=c["risultati_filtrati"],
         giorno=c["giorno"],
+        giorno_nome=c["giorno_nome"],
         ora=c["ora"],
         total_aule=c["total_aule"],
         num_with_class=c["num_with_class"],
@@ -410,10 +526,11 @@ def salva_presenze():
 @app.route("/dashboard")
 @sso_middleware.sso_login_required
 def dashboard():
+    """Dashboard - pagina principale per utenti autenticati."""
     if 'user' not in session:
-        return "Utente non autenticato", 401
+        return redirect(url_for('home'))
     user = session['user']
-    return f"Ciao {user['email']}"
+    return render_template("dashboard.html", user=user)
 
 
 # Precarica la cache all'avvio (funziona con qualsiasi WSGI server)

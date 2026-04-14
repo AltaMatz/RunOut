@@ -218,6 +218,11 @@ body {
     font-weight: 600;
 }
 
+/* Nascondi la barra delle statistiche su emergenze */
+.stats-bar {
+    display: none !important;
+}
+
 .classi-grid {
     display: grid;
     grid-template-columns: 1fr;
