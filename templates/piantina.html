@@ -6,59 +6,109 @@
 <div class="page-container">
     <div class="content-section">
         <h2>PIANTINA</h2>
-        <p>Visualizza la piantina dell'istituto con la disposizione delle aule e dei punti di raccolta.</p>
-        <div class="pdf-wrapper">
-            <object
-                class="pdf-viewer"
-                data="{{ pdf_path }}#view=FitH"
-                type="application/pdf"
-                aria-label="Piantina Istituto">
-                <p class="pdf-fallback">
-                    Il browser non supporta l'anteprima PDF.
-                    <a href="{{ pdf_path }}" target="_blank" rel="noopener">Apri il PDF in una nuova scheda</a>.
-                </p>
-            </object>
+        <p>Consulta le planimetrie dell'istituto per edificio e piano.</p>
+
+        <div class="map-tabs" role="tablist" aria-label="Selezione planimetria">
+            <button class="map-tab is-active" type="button" data-key="integrale">PIANTINA INTEGRALE</button>
+            <button class="map-tab" type="button" data-key="centrale">SEDE CENTRALE</button>
+            <button class="map-tab" type="button" data-key="elettronica">PALAZZINA ELETTRONICA</button>
+            <button class="map-tab" type="button" data-key="meccanica">PALAZZINA MECCANICA</button>
+            <button class="map-tab" type="button" data-key="tessile">PALAZZINA TESSILE</button>
+            <button class="map-tab" type="button" data-key="informatica">PALAZZINA INFORMATICA</button>
         </div>
-        <div class="pdf-actions">
-            <a href="{{ pdf_path }}" target="_blank" rel="noopener" class="pdf-link">Apri a schermo intero</a>
-            <a href="{{ pdf_path }}" download class="pdf-link pdf-link-secondary">Scarica PDF</a>
-        </div>
+
+        <div class="map-gallery" id="mapGallery" aria-live="polite"></div>
     </div>
 </div>
 
 <style>
-    .pdf-wrapper {
-        width: 100%;
-        max-width: 1100px;
-        height: clamp(420px, 72vh, 900px);
-        margin: 1rem auto 0;
-        overflow: hidden;
+    .map-tabs {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0.6rem;
+        margin-top: 1rem;
+        max-width: 1040px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .map-tab {
+        border: 1px solid #cbd5e0;
+        background: #ffffff;
+        color: #1a202c;
+        border-radius: 8px;
+        padding: 0.65rem 0.8rem;
+        font-size: 0.9rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .map-tab:hover,
+    .map-tab:focus-visible {
+        border-color: #2d3748;
+        outline: none;
+    }
+
+    .map-tab.is-active {
+        background: #2d3748;
+        color: #ffffff;
+        border-color: #2d3748;
+    }
+
+    .map-gallery {
+        margin-top: 1rem;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 1rem;
+    }
+
+    .map-card {
+        flex: 1 1 460px;
+        max-width: 520px;
         border: 1px solid #d9d9d9;
         border-radius: 10px;
         background: #f7f7f7;
+        overflow: hidden;
     }
 
-    .pdf-viewer {
-        width: 100%;
-        height: 100%;
-        border: 0;
-        display: block;
+    .map-card-title {
+        margin: 0;
+        padding: 0.7rem 0.9rem;
+        font-size: 0.98rem;
+        font-weight: 700;
+        color: #1a202c;
+        border-bottom: 1px solid #e2e8f0;
+        background: #edf2f7;
     }
 
-    .pdf-fallback {
-        padding: 1rem;
-        color: #4a5568;
+    .map-image-wrap {
+        height: 360px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #ffffff;
     }
 
-    .pdf-actions {
+    .map-card-actions {
         display: flex;
         justify-content: center;
-        gap: 0.75rem;
-        margin-top: 0.9rem;
+        gap: 0.6rem;
+        padding: 0.75rem;
+        border-top: 1px solid #e2e8f0;
+        background: #f8fafc;
         flex-wrap: wrap;
     }
 
-    .pdf-link {
+    .map-image {
+        width: 100%;
+        height: 100%;
+        display: block;
+        object-fit: contain;
+    }
+
+    .map-link {
         display: inline-block;
         padding: 0.6rem 1rem;
         border-radius: 8px;
@@ -68,16 +118,137 @@
         color: #ffffff;
     }
 
-    .pdf-link-secondary {
+    .map-link-secondary {
         background: #edf2f7;
         color: #2d3748;
     }
 
-    @media (max-width: 900px) {
-        .pdf-wrapper {
-            height: 62vh;
+    @media (max-width: 920px) {
+        .map-tabs {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .map-card {
+            flex-basis: 380px;
+        }
+    }
+
+    @media (max-width: 640px) {
+        .map-tabs {
+            grid-template-columns: 1fr;
+        }
+
+        .map-gallery {
+            gap: 0.8rem;
+        }
+
+        .map-image-wrap {
+            height: 280px;
+        }
+
+        .map-card {
+            flex-basis: 100%;
+            max-width: 100%;
         }
     }
 </style>
+
+<script>
+    const floorLabel = {
+        primo: "Piano terra",
+        secondo: "Primo piano",
+        terzo: "Secondo piano",
+        quarto: "Terzo piano"
+    };
+
+    const plansBySection = {
+        integrale: {
+            sectionTitle: "Piantina integrale",
+            images: [
+                { file: "piantina.jpg", title: "Piantina integrale" }
+            ]
+        },
+        centrale: {
+            sectionTitle: "Sede centrale",
+            images: [
+                { file: "centrale_primo.jpg", title: floorLabel.primo },
+                { file: "centrale_secondo.jpg", title: floorLabel.secondo },
+                { file: "centrale_terzo.jpg", title: floorLabel.terzo },
+                { file: "centrale_quarto.jpg", title: floorLabel.quarto }
+            ]
+        },
+        elettronica: {
+            sectionTitle: "Palazzina elettronica",
+            images: [
+                { file: "elettronica_primo.jpg", title: floorLabel.primo },
+                { file: "elettronica_secondo.jpg", title: floorLabel.secondo },
+                { file: "elettronica_terzo.jpg", title: floorLabel.terzo }
+            ]
+        },
+        meccanica: {
+            sectionTitle: "Palazzina meccanica",
+            images: [
+                { file: "meccanica_primo.jpg", title: floorLabel.primo },
+                { file: "meccanica_secondo.jpg", title: floorLabel.secondo },
+                { file: "meccanica_terzo.jpg", title: floorLabel.terzo }
+            ]
+        },
+        tessile: {
+            sectionTitle: "Palazzina tessile",
+            images: [
+                { file: "tessile_primo.jpg", title: floorLabel.primo },
+                { file: "tessile_secondo.jpg", title: floorLabel.secondo },
+                { file: "tessile_terzo.jpg", title: floorLabel.terzo }
+            ]
+        },
+        informatica: {
+            sectionTitle: "Palazzina informatica",
+            images: [
+                { file: "informatica_primo.jpg", title: floorLabel.primo },
+                { file: "informatica_secondo.jpg", title: floorLabel.secondo },
+                { file: "informatica_terzo.jpg", title: floorLabel.terzo }
+            ]
+        }
+    };
+
+    const baseImagePath = "{{ url_for('static', filename='images') }}";
+    const gallery = document.getElementById("mapGallery");
+    const tabs = document.querySelectorAll(".map-tab");
+
+    function renderSection(sectionKey) {
+        const selected = plansBySection[sectionKey];
+        if (!selected) {
+            return;
+        }
+
+        gallery.innerHTML = selected.images.map((img) => {
+            const src = `${baseImagePath}/${img.file}`;
+            return `
+                <article class="map-card">
+                    <h3 class="map-card-title">${selected.sectionTitle} - ${img.title}</h3>
+                    <div class="map-image-wrap">
+                        <img class="map-image" src="${src}" alt="${selected.sectionTitle} ${img.title}">
+                    </div>
+                    <div class="map-card-actions">
+                        <a href="${src}" target="_blank" rel="noopener" class="map-link">Apri immagine</a>
+                        <a href="${src}" download class="map-link map-link-secondary">Scarica immagine</a>
+                    </div>
+                </article>
+            `;
+        }).join("");
+
+        tabs.forEach((tab) => {
+            tab.classList.toggle("is-active", tab.dataset.key === sectionKey);
+        });
+    }
+
+    tabs.forEach((tab) => {
+        tab.addEventListener("click", () => {
+            renderSection(tab.dataset.key);
+        });
+    });
+
+    renderSection("integrale");
+</script>
 {% endblock %}
 

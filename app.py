@@ -16,7 +16,7 @@ from config import (
     MAX_SESSIONS_PER_USER, MAX_SESSIONS_GLOBAL,
     WHITELIST_FILE, WHITELIST_STUDENTI_FILE, API_TOKEN, DEBUG, SSO_CONFIG
 )
-from shared_modules.sso_middleware import SSOMiddleware, WhitelistManager, RateLimiter, RoleManager
+from shared_modules.sso_middleware import SSOMiddleware, WhitelistManager, RateLimiter, RoleManager, render_sso_error
 
 app = Flask(__name__)
 
@@ -249,6 +249,7 @@ def role_required(allowed_roles):
     return decorator
 
 @app.route("/")
+#@role_required('docente')
 def home():
     """Home page - mostra scelta email in dev mode, oppure home normale."""
     user = session.get('user', None)
@@ -467,6 +468,7 @@ def piantina():
     return render_template("piantina.html", pdf_path="/static/piantina.pdf")
 
 @app.route("/registri-compilati") # ROTTA REGISTRI COMPILATI
+@role_required('docente')
 def registri_compilati():
     import sqlite3
     
