@@ -1,4 +1,19 @@
 {
-  "enabled": false,
-  "emails": []
+  "enabled": true,
+  "staff": {
+    "docente": [
+      "mario.rossi@itispaleocapa.it",
+      "anna.bianchi@itispaleocapa.it",
+      "luca.todaro@itispaleocapa.it"
+    ],
+    "rspp": [
+      "rspp.responsabile@itispaleocapa.it"
+    ],
+    "dirigente": [
+      "dirigente.scolastico@itispaleocapa.it"
+    ],
+    "ufficio_tecnico": [
+      "tecnico.scuola@itispaleocapa.it"
+    ]
+  }
 }

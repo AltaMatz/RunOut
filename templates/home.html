@@ -5,9 +5,97 @@
 {% block content %}
 <div class="page-container">
     <div class="welcome-section">
-        <h2>Benvenuto</h2>
-        <p>Seleziona una sezione dal menu per iniziare.</p>
+        <h2>Benvenuto su Runout</h2>
+        <p>Sistema di gestione emergenze</p>
+        
+        {% if user %}
+            {# UTENTE AUTENTICATO #}
+            <div class="auth-card">
+                <p>✓ Accesso effettuato come: <strong>{{ user.email }}</strong></p>
+                <p>
+                    <a href="{{ url_for('dashboard') }}" class="btn btn-primary">
+                        Vai alla Dashboard
+                    </a>
+                    <a href="{{ url_for('logout') }}" class="btn btn-secondary">
+                        Esci
+                    </a>
+                </p>
+            </div>
+        {% else %}
+            {# UTENTE NON AUTENTICATO #}
+            <div class="login-card">
+                {% if sso_mode == 'dev' %}
+                    <p>🔧 <strong>MODALITÀ DEV</strong> - Seleziona quale email usare per testare il login.</p>
+                    <a href="{{ url_for('dev_login_choice') }}" class="btn btn-primary btn-large">
+                        🧪 Scegli Email di Test
+                    </a>
+                    <p style="margin-top: 16px; font-size: 12px; color: rgba(255,255,255,0.7);">
+                        ⚠️ Questa modalità è solo per testing locale
+                    </p>
+                {% else %}
+                    <p>Per accedere al sistema, effettua il login.</p>
+                    <a href="{{ url_for('sso_login') }}" class="btn btn-primary btn-large">
+                        🔐 Accedi
+                    </a>
+                    <p style="margin-top: 16px; font-size: 12px; color: #666;">
+                        L'accesso è gestito tramite il portale SSO della scuola.
+                    </p>
+                {% endif %}
+            </div>
+        {% endif %}
     </div>
 </div>
+
+<style>
+.auth-card, .login-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 32px;
+    border-radius: 16px;
+    margin-top: 24px;
+    text-align: center;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+}
+
+.auth-card p, .login-card p {
+    margin: 12px 0;
+    font-size: 16px;
+}
+
+.btn {
+    display: inline-block;
+    padding: 12px 24px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 500;
+    margin: 8px;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    transition: opacity 0.2s;
+}
+
+.btn:hover {
+    opacity: 0.9;
+}
+
+.btn-primary {
+    background: white;
+    color: #667eea;
+}
+
+.btn-secondary {
+    background: rgba(255,255,255,0.2);
+    color: white;
+    border: 1px solid white;
+}
+
+.btn-large {
+    padding: 16px 40px;
+    font-size: 18px;
+    width: 100%;
+    max-width: 280px;
+}
+</style>
 {% endblock %}
 

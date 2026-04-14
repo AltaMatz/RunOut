@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Runout{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    <div class="dashboard-header">
+        <div class="user-info">
+            <h2>Benvenuto, {{ user.name or user.email }}</h2>
+            <p class="user-email">{{ user.email }}</p>
+            <div class="user-role">
+                <span class="badge badge-{{ user.role }}">
+                    {% if user.role == 'student' %}
+                        👨‍🎓 Studente
+                    {% elif user.role == 'docente' %}
+                        👨‍🏫 Docente
+                    {% elif user.role == 'rspp' %}
+                        👷 RSPP
+                    {% elif user.role == 'dirigente' %}
+                        👔 Dirigente
+                    {% elif user.role == 'ufficio_tecnico' %}
+                        🔧 Ufficio Tecnico
+                    {% else %}
+                        👤 {{ user.role }}
+                    {% endif %}
+                </span>
+            </div>
+            {% if user.picture %}
+                <img src="{{ user.picture }}" alt="Avatar" class="user-avatar">
+            {% endif %}
+            <p class="auth-time">
+                Autenticato il: {{ user.authenticated_at }}
+            </p>
+        </div>
+    </div>
+
+    <div class="dashboard-content">
+        <section class="feature-card">
+            <h3>📍 Emergenze</h3>
+            <p>Gestione emergenze scolastiche</p>
+            <a href="{{ url_for('emergenze') }}" class="btn btn-action">Vai</a>
+        </section>
+
+        <section class="feature-card">
+            <h3>🗺️ Piantina</h3>
+            <p>Mappa dell'edificio scolastico</p>
+            <a href="{{ url_for('piantina') }}" class="btn btn-action">Vai</a>
+        </section>
+
+        <section class="feature-card">
+            <h3>📋 Registri</h3>
+            <p>Registri compilati</p>
+            <a href="{{ url_for('registri_compilati') }}" class="btn btn-action">Vai</a>
+        </section>
+    </div>
+
+    <div class="dashboard-footer">
+        <a href="{{ url_for('logout') }}" class="btn btn-logout">🚪 Esci</a>
+    </div>
+</div>
+
+<style>
+.dashboard-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 32px;
+    border-radius: 16px;
+    margin-bottom: 24px;
+    text-align: center;
+}
+
+.user-info h2 {
+    margin: 0 0 8px;
+    font-size: 24px;
+}
+
+.user-email {
+    color: rgba(255,255,255,0.8);
+    margin: 0 0 12px;
+    font-size: 14px;
+}
+
+.user-role {
+    margin: 12px 0;
+}
+
+.badge {
+    display: inline-block;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    background: rgba(255,255,255,0.2);
+    color: white;
+    border: 1px solid white;
+}
+
+.badge-student {
+    background: rgba(100, 200, 255, 0.3);
+    border-color: rgba(100, 200, 255, 0.8);
+}
+
+.badge-docente {
+    background: rgba(150, 200, 100, 0.3);
+    border-color: rgba(150, 200, 100, 0.8);
+}
+
+.badge-rspp {
+    background: rgba(200, 150, 100, 0.3);
+    border-color: rgba(200, 150, 100, 0.8);
+}
+
+.badge-dirigente {
+    background: rgba(200, 100, 100, 0.3);
+    border-color: rgba(200, 100, 100, 0.8);
+}
+
+.badge-ufficio_tecnico {
+    background: rgba(100, 200, 200, 0.3);
+    border-color: rgba(100, 200, 200, 0.8);
+}
+
+.user-avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    border: 3px solid white;
+    margin: 12px 0;
+}
+
+.auth-time {
+    font-size: 12px;
+    color: rgba(255,255,255,0.7);
+    margin: 12px 0 0;
+}
+
+.dashboard-content {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.feature-card {
+    background: white;
+    border: 1px solid #eee;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.feature-card h3 {
+    margin: 0 0 8px;
+    color: #333;
+}
+
+.feature-card p {
+    margin: 0 0 12px;
+    color: #666;
+    font-size: 14px;
+}
+
+.btn-action {
+    display: inline-block;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.btn-action:hover {
+    opacity: 0.9;
+}
+
+.dashboard-footer {
+    text-align: center;
+    padding-top: 16px;
+    border-top: 1px solid #eee;
+}
+
+.btn-logout {
+    background: #f0f0f0;
+    color: #333;
+    padding: 12px 32px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.btn-logout:hover {
+    background: #e0e0e0;
+}
+</style>
+{% endblock %}
