@@ -183,7 +183,7 @@ async def elencoStudenti(classe, aula):
 
 @app.route("/piantina") # ROTTA PIANTINA
 def piantina():
-    return render_template("piantina.html")
+    return render_template("piantina.html", pdf_path="/static/piantina.pdf")
 
 @app.route("/registri-compilati") # ROTTA REGISTRI COMPILATI
 def registri_compilati():
