@@ -1,4 +1,0 @@
-1 testare il login in production
-2 lavorare sulla whitelist(automatizzare?)
-3 logout da applicazione docente
-4 salvataggio mail e riconoscimento ruoli
