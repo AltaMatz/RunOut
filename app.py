@@ -2,6 +2,9 @@ from datetime import datetime
 import os
 import secrets
 import json
+import atexit
+import subprocess
+import sys
 from functools import wraps
 from flask import Flask, jsonify, render_template, render_template_string, request, session, redirect, url_for  # type: ignore
 import requests #type: ignore
@@ -176,6 +179,85 @@ def _refresh_cache_in_background():
             loop.close()
 
     threading.Thread(target=run, daemon=True).start()
+
+
+# ============================================================
+# PROCESSO SYNC PRESENZE
+# ============================================================
+
+_sync_process = None
+
+
+def _should_start_sync_process() -> bool:
+    """Evita il doppio avvio con il reloader di Flask in debug."""
+    if app.debug and os.environ.get("WERKZEUG_RUN_MAIN") != "true":
+        return False
+    return True
+
+
+def _start_sync_presenze_process():
+    """Avvia sync_presenze.py in background se non è già attivo."""
+    global _sync_process
+
+    if not _should_start_sync_process():
+        return
+
+    if _sync_process is not None and _sync_process.poll() is None:
+        return
+
+    script_path = os.path.join(os.path.dirname(__file__), "sync_presenze.py")
+    if not os.path.exists(script_path):
+        app.logger.warning("sync_presenze.py non trovato: impossibile avviare la sincronizzazione automatica")
+        return
+
+    try:
+        creationflags = 0
+        if os.name == "nt":
+            creationflags = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
+
+        _sync_process = subprocess.Popen(
+            [sys.executable, script_path],
+            cwd=os.path.dirname(__file__),
+            creationflags=creationflags,
+        )
+        app.logger.info(f"sync_presenze.py avviato automaticamente (PID: {_sync_process.pid})")
+    except Exception as e:
+        app.logger.error(f"Errore avvio sync_presenze.py: {e}")
+        _sync_process = None
+
+
+def _stop_sync_presenze_process():
+    """Termina il processo sync_presenze.py se attivo."""
+    global _sync_process
+
+    if _sync_process is None:
+        return
+
+    if _sync_process.poll() is not None:
+        _sync_process = None
+        return
+
+    try:
+        app.logger.info("Arresto automatico di sync_presenze.py...")
+        _sync_process.terminate()
+        _sync_process.wait(timeout=5)
+    except Exception:
+        try:
+            if os.name == "nt":
+                subprocess.run(
+                    ["taskkill", "/PID", str(_sync_process.pid), "/T", "/F"],
+                    check=False,
+                    capture_output=True,
+                )
+            else:
+                _sync_process.kill()
+        except Exception:
+            pass
+    finally:
+        _sync_process = None
+
+
+atexit.register(_stop_sync_presenze_process)
 
 
 # ============================================================
@@ -675,5 +757,9 @@ with app.app_context():
     _refresh_cache_in_background()
 
 if __name__ == "__main__":
+    _start_sync_presenze_process()
     _refresh_cache_in_background()  # Precarica i dati appena il server parte
-    app.run(debug=True)
+    try:
+        app.run(debug=DEBUG)
+    finally:
+        _stop_sync_presenze_process()
