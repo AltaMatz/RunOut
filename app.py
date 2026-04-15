@@ -1,16 +1,25 @@
-from datetime import datetime
+import asyncio
+import atexit
+import json
 import os
 import secrets
-import json
-import atexit
 import subprocess
 import sys
+from datetime import datetime
 from functools import wraps
-from flask import Flask, jsonify, render_template, render_template_string, request, session, redirect, url_for  # type: ignore
-import requests #type: ignore
-from dotenv import load_dotenv # type: ignore
-import asyncio
-import httpx # type:ignore
+
+import httpx  # type: ignore
+import requests  # type: ignore
+from flask import (
+    Flask,
+    jsonify,
+    redirect,
+    render_template,
+    render_template_string,
+    request,
+    session,
+    url_for,
+)  # type: ignore
 
 from config import (
     FLASK_SECRET_KEY, SESSION_LIFETIME_SECONDS,
@@ -21,27 +30,25 @@ from config import (
 )
 from shared_modules.sso_middleware import SSOMiddleware, WhitelistManager, RateLimiter, RoleManager, render_sso_error
 
+
+# ============================================================
+# BOOTSTRAP APPLICAZIONE
+# ============================================================
+
 app = Flask(__name__)
 
-# Configurazione Flask
 app.secret_key = FLASK_SECRET_KEY
 app.permanent_session_lifetime = SESSION_LIFETIME_SECONDS
 app.debug = DEBUG
 
-# Inizializza manager della whitelist
 whitelist_manager = WhitelistManager(WHITELIST_FILE)
-
-# Inizializza role manager (per assegnare ruoli in base all'email)
 role_manager = RoleManager(WHITELIST_FILE, WHITELIST_STUDENTI_FILE)
-
-# Inizializza rate limiter
 rate_limiter = RateLimiter(
     max_sessions_per_user=MAX_SESSIONS_PER_USER,
     max_sessions_global=MAX_SESSIONS_GLOBAL,
     session_ttl_seconds=SESSION_LIFETIME_SECONDS
 )
 
-# Inizializza middleware SSO
 sso_middleware = SSOMiddleware(
     jwt_secret=SSO_JWT_SECRET,
     jwt_algorithm="HS256",
@@ -53,17 +60,17 @@ sso_middleware = SSOMiddleware(
     rate_limiter=rate_limiter
 )
 
-API_TOKEN = API_TOKEN  # Carico il token dal config
 
-# Carica le aule dal file JSON
-with open('floors.json', 'r', encoding='utf-8') as f:
+# ============================================================
+# DATI STATICI
+# ============================================================
+
+with open("floors.json", "r", encoding="utf-8") as f:
     aule_dict = json.load(f)
 
-# Crea una lista piatta di tutte le aule
 aula = []
-for floor, rooms in aule_dict.items():
+for _, rooms in aule_dict.items():
     aula.extend(rooms)
-# print (len(aula))
 
 # ============================================================
 # CACHE EMERGENZE
@@ -261,7 +268,7 @@ atexit.register(_stop_sync_presenze_process)
 
 
 # ============================================================
-# UTILITY & DECORATORS
+# UTILITY E DECORATORS
 # ============================================================
 
 def get_username(email: str) -> str:
@@ -283,12 +290,12 @@ def role_required(allowed_roles):
     def decorator(f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
-            user = session.get('user', None)
+            user = session.get("user", None)
             if not user:
                 app.logger.warning("Accesso senza sessione")
-                return redirect(url_for('home'))
+                return redirect(url_for("home"))
             
-            user_role = user.get('role', 'guest')
+            user_role = user.get("role", "guest")
             if user_role not in allowed_roles:
                 app.logger.warning(f"Accesso vietato per ruolo '{user_role}' a {request.path}")
                 return render_template_string(
@@ -323,67 +330,66 @@ def role_required(allowed_roles):
                     """,
                     allowed=", ".join(allowed_roles),
                     your_role=user_role,
-                    home_url=url_for('home')
+                    home_url=url_for("home")
                 ), 403
             
             return f(*args, **kwargs)
         return decorated_function
     return decorator
 
+
+# ============================================================
+# ROUTE PUBBLICHE
+# ============================================================
+
 @app.route("/")
-#@role_required('docente')
 def home():
     """Home page - mostra scelta email in dev mode, oppure home normale."""
-    user = session.get('user', None)
+    user = session.get("user", None)
     
-    # In dev mode, mostra direttamente la scelta di email se non autenticato
-    if SSO_MODE == 'dev' and not user:
+    if SSO_MODE == "dev" and not user:
         return render_template("dev_login_choice.html",
                              student_email=DEV_USER_EMAIL,
                              docente_email=DEV_DOCENTE_EMAIL)
     
-    # Altrimenti mostra la home normale
     return render_template("home.html", user=user, sso_mode=SSO_MODE)
 
 
 # ============================================================
-# DEV MODE - SCELTA EMAIL
+# ROUTE DEV
 # ============================================================
 
-@app.route('/dev/login-choice')
+@app.route("/dev/login-choice")
 def dev_login_choice():
-    """
-    (Solo in DEV mode) Pagina per scegliere quale email usare per il login di test.
-    """
-    if SSO_MODE != 'dev':
-        return redirect(url_for('home'))
+    """(Solo in DEV mode) Pagina per scegliere quale email usare per il login di test."""
+    if SSO_MODE != "dev":
+        return redirect(url_for("home"))
     
-    return render_template("dev_login_choice.html", 
+    return render_template("dev_login_choice.html",
                          student_email=DEV_USER_EMAIL,
                          docente_email=DEV_DOCENTE_EMAIL)
 
 
 # ============================================================
-# ROUTE SSO
+# ROUTE SSO E SESSIONE
 # ============================================================
 
-@app.route('/sso/login')
+@app.route("/sso/login")
 def sso_login():
     """
     Endpoint SSO. Il portale checkin chiama questa URL passando il JWT.
     Questo è l'unico punto di ingresso autenticato nell'applicazione.
     """
-    token = request.args.get('token')
+    token = request.args.get("token")
 
-    # --- Modalità DEV: simula il login senza portale reale ---
-    if SSO_MODE == 'dev' and not token:
-        dev_email = request.args.get('email') or DEV_USER_EMAIL
+    if SSO_MODE == "dev" and not token:
+        dev_email = request.args.get("email") or DEV_USER_EMAIL
         app.logger.info(f"DEV MODE: login simulato per {dev_email}")
         user_data = {
-            'email': dev_email,
-            'name': get_username(dev_email).replace('.', ' ').title(),
-            'googleId': 'dev-user-id',
-            'picture': ''
+            "email": dev_email,
+            "name": get_username(dev_email).replace(".", " ").title(),
+            "googleId": "dev-user-id",
+            "picture": "",
         }
         return _complete_login(user_data)
 
@@ -411,9 +417,8 @@ def _complete_login(user_data: dict):
     2. Verifica rate limit
     3. Crea sessione e redirect alla dashboard
     """
-    email = user_data.get('email', '')
+    email = user_data.get("email", "")
 
-    # 1. Determina il ruolo e verifica autorizzazione
     role, is_authorized = role_manager.get_role(email)
     if not is_authorized:
         app.logger.warning(f"Accesso negato - Utente non autorizzato: {email} (role: {role})")
@@ -428,7 +433,6 @@ def _complete_login(user_data: dict):
     
     app.logger.info(f"Utente autorizzato: {email} con ruolo '{role}'")
 
-    # 2. Controllo rate limit - registra la nuova sessione
     session_id = secrets.token_hex(32)
     allowed, reason = rate_limiter.register_session(session_id, email)
     if not allowed:
@@ -441,39 +445,39 @@ def _complete_login(user_data: dict):
             icon="⏱️"
         )
 
-    # 3. Crea sessione Flask (con ruolo)
     sso_middleware.create_session(user_data, session, session_id=session_id, role=role)
 
-    # 4. Precarica i dati emergenze in background (se la cache è scaduta)
     if _cache_is_stale():
         _refresh_cache_in_background()
 
-    return redirect(url_for('dashboard'))
+    return redirect(url_for("dashboard"))
 
 
-@app.route('/logout')
+@app.route("/logout")
 def logout():
     """Logout - termina la sessione e reindirizza al portale SSO o home."""
-    if session.get('session_id'):
-        rate_limiter.remove_session(session.get('session_id'))
+    if session.get("session_id"):
+        rate_limiter.remove_session(session.get("session_id"))
     session.clear()
     app.logger.info("Logout effettuato")
-    return redirect(url_for('home'))
+    return redirect(url_for("home"))
 
 
-@app.route("/emergenze") # ROTTA EMERGENZE
-@role_required('docente')  # Solo docenti possono accedere
+# ============================================================
+# ROUTE DOCENTE
+# ============================================================
+
+@app.route("/emergenze")
+@role_required("docente")
 def emergenze():
-    # Se la cache è vuota (primo avvio senza login), avvia il fetch e aspetta
     if _emergenze_cache["last_update"] is None:
-        import threading, time
+        import time
+
         _refresh_cache_in_background()
-        # Aspetta al massimo 10 secondi che la cache si popoli
         for _ in range(20):
             if _emergenze_cache["last_update"] is not None:
                 break
             time.sleep(0.5)
-    # Se la cache è scaduta, aggiorna in background e servi i dati vecchi
     elif _cache_is_stale():
         _refresh_cache_in_background()
 
@@ -488,6 +492,7 @@ def emergenze():
         num_with_class=c["num_with_class"],
     )
 
+
 @app.route("/api/emergenze/refresh", methods=["POST"])
 def refresh_emergenze():
     """Forza il ricalcolo della cache emergenze (es. da un pulsante nella UI)."""
@@ -495,7 +500,7 @@ def refresh_emergenze():
     return jsonify({"success": True, "message": "Aggiornamento cache avviato"}), 202
 
 
-@app.route("/elencoStudenti/<classe>/<aula>") # ROTTA ELENCO STUDENTI
+@app.route("/elencoStudenti/<classe>/<aula>")
 def elencoStudenti(classe, aula):
     
     url = f"https://sipal.itispaleocapa.it/api/proxySipal/v1/studenti/classe/elenco/{classe}"
@@ -545,12 +550,14 @@ def elencoStudenti(classe, aula):
             errore=f"Errore generico: {str(e)}"
         )
 
-@app.route("/piantina") # ROTTA PIANTINA
+
+@app.route("/piantina")
 def piantina():
     return render_template("piantina.html", pdf_path="/static/piantina.pdf")
 
-@app.route("/registri-compilati") # ROTTA REGISTRI COMPILATI
-@role_required('docente')
+
+@app.route("/registri-compilati")
+@role_required("docente")
 def registri_compilati():
     import sqlite3
     
@@ -563,7 +570,6 @@ def registri_compilati():
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
         
-        # Query che recupera i registri raggruppati per classe con informazioni di stato
         query = """
         SELECT 
             c.ClasseID,
@@ -613,46 +619,49 @@ def registri_compilati():
                     pass
 
             compilazioni_per_classe[str(row["Classe"]).strip().upper()] = {
-                'data': data_value,
-                'ora': ora_value,
-                'timestamp': row["Timestamp"] or ''
+                "data": data_value,
+                "ora": ora_value,
+                "timestamp": row["Timestamp"] or "",
             }
         
-        # Raggruppa i dati per classe
         for row in rows:
             classe_key = f"{row['Anno']}{row['Sezione']}"
             
             if classe_key not in registri_per_classe:
                 registri_per_classe[classe_key] = {
-                    'anno': row['Anno'],
-                    'sezione': row['Sezione'],
-                    'studenti': [],
-                    'data_compilazione': compilazioni_per_classe.get(classe_key, {}).get('data', ''),
-                    'ora_compilazione': compilazioni_per_classe.get(classe_key, {}).get('ora', '')
+                    "anno": row["Anno"],
+                    "sezione": row["Sezione"],
+                    "studenti": [],
+                    "data_compilazione": compilazioni_per_classe.get(classe_key, {}).get("data", ""),
+                    "ora_compilazione": compilazioni_per_classe.get(classe_key, {}).get("ora", ""),
                 }
             
             studente = {
-                'nome': row['Nome'] or '',
-                'cognome': row['Cognome'] or '',
-                'stato': row['NomeStato'] or 'Non definito',
-                'stato_id': row['Stato'],
-                'descrizione': row['Descrizione'] or ''
+                "nome": row["Nome"] or "",
+                "cognome": row["Cognome"] or "",
+                "stato": row["NomeStato"] or "Non definito",
+                "stato_id": row["Stato"],
+                "descrizione": row["Descrizione"] or "",
             }
-            registri_per_classe[classe_key]['studenti'].append(studente)
+            registri_per_classe[classe_key]["studenti"].append(studente)
 
-            if not registri_per_classe[classe_key].get('data_compilazione'):
-                registri_per_classe[classe_key]['data_compilazione'] = compilazioni_per_classe.get(classe_key, {}).get('data', '')
-            if not registri_per_classe[classe_key].get('ora_compilazione'):
-                registri_per_classe[classe_key]['ora_compilazione'] = compilazioni_per_classe.get(classe_key, {}).get('ora', '')
+            if not registri_per_classe[classe_key].get("data_compilazione"):
+                registri_per_classe[classe_key]["data_compilazione"] = compilazioni_per_classe.get(classe_key, {}).get("data", "")
+            if not registri_per_classe[classe_key].get("ora_compilazione"):
+                registri_per_classe[classe_key]["ora_compilazione"] = compilazioni_per_classe.get(classe_key, {}).get("ora", "")
         
-        # Ordina il dizionario per anno (crescente) e sezione (alfabetica)
-        registri_per_classe = dict(sorted(registri_per_classe.items(), key=lambda x: (x[1]['anno'], x[1]['sezione'])))
+        registri_per_classe = dict(sorted(registri_per_classe.items(), key=lambda x: (x[1]["anno"], x[1]["sezione"])))
         
         conn.close()
     except Exception as e:
         print(f"Errore nel recupero dei registri: {e}")
     
     return render_template("registri_compilati.html", registri_per_classe=registri_per_classe)
+
+
+# ============================================================
+# ROUTE API
+# ============================================================
 
 @app.route("/api/emergenze", methods=["POST"])
 def salva_presenze():
@@ -663,19 +672,17 @@ def salva_presenze():
     try:
         data = request.get_json()
         
-        if not data or 'classe' not in data or 'presenze' not in data:
+        if not data or "classe" not in data or "presenze" not in data:
             return jsonify({"error": "Dati mancanti: classe e presenze sono obbligatori"}), 400
         
-        classe = data['classe']
-        presenze = data['presenze']
-        studenti_attesi = data.get('studenti_attesi', [])
+        classe = data["classe"]
+        presenze = data["presenze"]
+        studenti_attesi = data.get("studenti_attesi", [])
         stati_validi = {"PRESENTE", "ASSENTE", "DISPERSO"}
         
-        # Controlla che tutti gli studenti abbiano uno stato compilato
         if not isinstance(presenze, dict) or len(presenze) == 0:
             return jsonify({"error": "Nessuno studente presente nella classe"}), 400
         
-        # Verifica che il payload contenga tutti gli studenti attesi
         studenti_mancanti = []
         for nome_studente in studenti_attesi:
             if nome_studente not in presenze:
@@ -690,7 +697,6 @@ def salva_presenze():
                 "studenti": studenti_mancanti
             }), 400
 
-        # Verifica che ogni stato sia uno dei valori ammessi
         stati_non_validi = []
         for nome_studente, stato in presenze.items():
             stato_norm = str(stato).strip().upper()
@@ -704,7 +710,6 @@ def salva_presenze():
                 "studenti": stati_non_validi
             }), 400
         
-        # Prepara il record da salvare
         now = datetime.now()
         record = {
             "classe": classe,
@@ -714,11 +719,9 @@ def salva_presenze():
             "presenze": presenze
         }
         
-        # Leggi il file esistente (se presente)
-        # Usa il percorso relativo alla directory del progetto
         file_path = os.path.join(os.path.dirname(__file__), "presenze.json")
         if os.path.exists(file_path):
-            with open(file_path, 'r', encoding='utf-8') as f:
+            with open(file_path, "r", encoding="utf-8") as f:
                 try:
                     all_presenze = json.load(f)
                 except json.JSONDecodeError:
@@ -726,11 +729,9 @@ def salva_presenze():
         else:
             all_presenze = []
         
-        # Aggiungi il nuovo record
         all_presenze.append(record)
         
-        # Salva il file
-        with open(file_path, 'w', encoding='utf-8') as f:
+        with open(file_path, "w", encoding="utf-8") as f:
             json.dump(all_presenze, f, ensure_ascii=False, indent=2)
         
         return jsonify({
@@ -746,19 +747,22 @@ def salva_presenze():
 @sso_middleware.sso_login_required
 def dashboard():
     """Dashboard - pagina principale per utenti autenticati."""
-    if 'user' not in session:
-        return redirect(url_for('home'))
-    user = session['user']
+    if "user" not in session:
+        return redirect(url_for("home"))
+    user = session["user"]
     return render_template("dashboard.html", user=user)
 
 
-# Precarica la cache all'avvio (funziona con qualsiasi WSGI server)
+# ============================================================
+# AVVIO APPLICAZIONE
+# ============================================================
+
 with app.app_context():
     _refresh_cache_in_background()
 
 if __name__ == "__main__":
     _start_sync_presenze_process()
-    _refresh_cache_in_background()  # Precarica i dati appena il server parte
+    _refresh_cache_in_background()
     try:
         app.run(debug=DEBUG)
     finally:
