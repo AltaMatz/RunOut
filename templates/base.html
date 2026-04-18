@@ -17,7 +17,7 @@
             {% if session.get('user') %}
             <div class="nav-user">
                 <span class="user-email">{{ session.user.email }}</span>
-                <a href="{{ url_for('logout') }}" class="logout-btn">🚪 Esci</a>
+                <a href="{{ url_for('logout') }}" class="logout-btn">🚪 logout</a>
             </div>
             {% endif %}
         </div>
@@ -27,7 +27,8 @@
         {% block content %}{% endblock %}
     </main>
 
-    <!-- Bottom Navigation Bar -->
+    <!-- Bottom Navigation Bar - Visible only when authenticated -->
+    {% if session.get('user') %}
     <nav class="bottom-nav">
         <a href="{{ url_for('home') }}" class="nav-item">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -62,6 +63,7 @@
             <span>Registri</span>
         </a>
     </nav>
+    {% endif %}
 
     <script>
         // Evidenzia la voce attiva nella bottom nav
@@ -107,7 +109,7 @@
         }
 
         .logout-btn {
-            background: #ff6b6b;
+            background: #c81515;
             color: white;
             padding: 8px 16px;
             border-radius: 6px;
@@ -121,7 +123,7 @@
         }
 
         .logout-btn:hover {
-            background: #ff5252;
+            background: #c81515;
             transform: translateY(-2px);
             box-shadow: 0 4px 8px rgba(255, 107, 107, 0.3);
         }
