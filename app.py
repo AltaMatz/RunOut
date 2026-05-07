@@ -675,5 +675,6 @@ with app.app_context():
     _refresh_cache_in_background()
 
 if __name__ == "__main__":
+    from config import PORT
     _refresh_cache_in_background()  # Precarica i dati appena il server parte
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=PORT, debug=DEBUG)

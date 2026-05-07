@@ -17,7 +17,7 @@
             {% if session.get('user') %}
             <div class="nav-user">
                 <span class="user-email">{{ session.user.email }}</span>
-                <a href="{{ url_for('logout') }}" class="logout-btn">🚪 logout</a>
+                <a href="{{ url_for('logout') }}" class="logout-btn">logout</a>
             </div>
             {% endif %}
         </div>

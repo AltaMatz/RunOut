@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: runout-app
+    ports:
+      - "3020:3020"
+    environment:
+      - APP_ENV=production
+      - DEBUG=false
+      - FLASK_SECRET_KEY=${FLASK_SECRET_KEY:-change-me-in-production}
+      - SESSION_LIFETIME_SECONDS=28800
+      - SSO_MODE=${SSO_MODE:-dev}
+      - SSO_JWT_SECRET=${SSO_JWT_SECRET:-test-secret-change-in-production}
+      - SSO_JWT_ISSUER=${SSO_JWT_ISSUER:-sso-portal}
+      - SSO_JWT_AUDIENCE=${SSO_JWT_AUDIENCE:-mia-app}
+      - SSO_PORTAL_URL=${SSO_PORTAL_URL:-http://localhost:5000}
+      - DEV_USER_EMAIL=${DEV_USER_EMAIL:-vivo.ciro.studente@itispaleocapa.it}
+      - DEV_DOCENTE_EMAIL=${DEV_DOCENTE_EMAIL:-luca.todaro@itispaleocapa.it}
+      - MAX_SESSIONS_PER_USER=3
+      - MAX_SESSIONS_GLOBAL=100
+      - API_TOKEN=${API_TOKEN:-}
+      - PORT=3020
+    volumes:
+      - ./data:/app/data
+      - ./floors.json:/app/floors.json
+      - ./presenze.json:/app/presenze.json
+      - ./puntiraccolta.json:/app/puntiraccolta.json
+    restart: unless-stopped
+    networks:
+      - runout-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3020/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  runout-network:
+    driver: bridge
