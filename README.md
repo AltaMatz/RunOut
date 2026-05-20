@@ -54,7 +54,6 @@ RunOut supporta il personale scolastico nella gestione operativa durante emergen
 - `static/`: CSS e asset statici.
 - `data/`: whitelist staff e studenti.
 - `sync_presenze.py`: sincronizzazione `presenze.json` -> `runout.db`.
-- `test_sso_client.py`: client di test per il flusso SSO/JWT.
 
 ## Prerequisiti
 
@@ -219,20 +218,7 @@ python sync_presenze.py
 
 ## Testing SSO
 
-Per testare il flusso JWT completo usa il client interattivo:
-
-```powershell
-python test_sso_client.py
-```
-
-Il test client simula il portale SSO e verifica:
-
-- login validi;
-- token scaduti o con firma errata;
-- comportamento whitelist;
-- rate limiting sessioni.
-
-Per una guida estesa consulta `SSO_TEST_GUIDE.md`.
+Per una guida al testing del flusso SSO consulta `SSO_TEST_GUIDE.md`.
 
 ## Troubleshooting
 

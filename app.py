@@ -14,9 +14,9 @@ from config import (
     SSO_MODE, DEV_USER_EMAIL, DEV_DOCENTE_EMAIL,
     SSO_JWT_SECRET, SSO_JWT_ISSUER, SSO_JWT_AUDIENCE, SSO_PORTAL_URL,
     MAX_SESSIONS_PER_USER, MAX_SESSIONS_GLOBAL,
-    WHITELIST_FILE, WHITELIST_STUDENTI_FILE, API_TOKEN, DEBUG, SSO_CONFIG
+    WHITELIST_FILE, API_TOKEN, DEBUG, SSO_CONFIG
 )
-from shared_modules.sso_middleware import SSOMiddleware, WhitelistManager, RateLimiter, RoleManager, render_sso_error
+from shared_modules.sso_middleware import SSOMiddleware, RateLimiter, RoleManager, render_sso_error
 
 app = Flask(__name__)
 
@@ -25,11 +25,8 @@ app.secret_key = FLASK_SECRET_KEY
 app.permanent_session_lifetime = SESSION_LIFETIME_SECONDS
 app.debug = DEBUG
 
-# Inizializza manager della whitelist
-whitelist_manager = WhitelistManager(WHITELIST_FILE)
-
-# Inizializza role manager (per assegnare ruoli in base all'email)
-role_manager = RoleManager(WHITELIST_FILE, WHITELIST_STUDENTI_FILE)
+# Inizializza role manager (assegna ruoli in base alla forma dell'email e whitelist.json)
+role_manager = RoleManager(WHITELIST_FILE)
 
 # Inizializza rate limiter
 rate_limiter = RateLimiter(
@@ -46,7 +43,6 @@ sso_middleware = SSOMiddleware(
     jwt_audience=SSO_JWT_AUDIENCE,
     session_timeout=SESSION_LIFETIME_SECONDS,
     portal_url=SSO_PORTAL_URL,
-    whitelist_manager=whitelist_manager,
     rate_limiter=rate_limiter
 )
 

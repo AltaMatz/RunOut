@@ -31,14 +31,9 @@ python app.py
 
 L'app ascolta su `http://localhost:3020`
 
-### 2. **In un altro terminale, esegui i test**
+### 2. **Testa il flusso SSO**
 
-```bash
-cd c:\Users\vivox\OneDrive\Desktop\RunOut
-python test_sso_client.py
-```
-
-Vedrai un menu interattivo. Scegli un test!
+Consulta le sezioni sottostanti per i dettagli di testing.
 
 ---
 
@@ -301,7 +296,7 @@ Accedi al portale → Effettua login → Dovrebbe reindirizzare alla tua app →
 
 **Soluzione:**
 - Verifica che il portale stia reindirizzando a `/sso/login?token=...`
-- Esegui test manualmente: `python test_sso_client.py`
+- Consulta la documentazione di test qui di seguito
 
 ### Problema: "Token SSO non valido"
 
@@ -402,7 +397,7 @@ Oppure aggiungi l'email alla lista.
 Se riscontri problemi:
 
 1. Abilita DEBUG=True e controlla i log
-2. Esegui `python test_sso_client.py` per test dettagliati
+2. Consulta i test case nella documentazione
 3. Verifica i secret condivisi con il portale SSO
 4. Controlla che i nomi di issuer/audience siano identici
 

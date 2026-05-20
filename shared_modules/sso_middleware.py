@@ -24,33 +24,27 @@ logger = logging.getLogger(__name__)
 
 class RoleManager:
     """
-    Gestisce i ruoli degli utenti in base alla loro email.
+    Gestisce i ruoli degli utenti in base alla loro email in production.
     
-    Logica:
-    - Email contiene .studente@ → STUDENTE (da whitelist_studenti.json)
-    - Email altrimenti → Controlla whitelist.json per ruoli (docente, rspp, dirigente, ufficio_tecnico)
+    STRATEGIA DI PRODUCTION:
+    1. Email con .studente@ → Ruolo "student", autorizzato=True (automatico, no whitelist)
+    2. Email senza .studente@ → Controlla whitelist.json staff per ruolo specifico
+    3. Non trovato in whitelist → Ruolo "guest", autorizzato=False
     
     Struttura whitelist.json:
     {
         "enabled": true,
         "staff": {
-            "docenti": ["mario.rossi@itispaleocapa.it"],
+            "docente": ["mario.rossi@itispaleocapa.it", "anna.bianchi@itispaleocapa.it"],
             "rspp": ["rspp@itispaleocapa.it"],
-            "dirigente": ["dirigente@itispaleocapa.it"],
+            "dirigente": ["preside@itispaleocapa.it"],
             "ufficio_tecnico": ["tecnico@itispaleocapa.it"]
         }
     }
-    
-    Struttura whitelist_studenti.json:
-    {
-        "enabled": true,
-        "emails": ["student1@itispaleocapa.it", "student2@itispaleocapa.it"]
-    }
     """
 
-    def __init__(self, whitelist_path: str, whitelist_studenti_path: str):
+    def __init__(self, whitelist_path: str, whitelist_studenti_path: str = None):
         self.whitelist_path = whitelist_path
-        self.whitelist_studenti_path = whitelist_studenti_path
         self._lock = threading.Lock()
 
     def _is_student_email(self, email: str) -> bool:
@@ -66,61 +60,44 @@ class RoleManager:
             logger.error(f"Errore lettura staff whitelist: {e}")
             return {"enabled": False, "staff": {}}
 
-    def _load_student_whitelist(self) -> dict:
-        """Carica la whitelist degli studenti."""
-        try:
-            with open(self.whitelist_studenti_path, 'r') as f:
-                return json.load(f)
-        except Exception as e:
-            logger.error(f"Errore lettura student whitelist: {e}")
-            return {"enabled": False, "emails": []}
-
     def get_role(self, email: str) -> tuple[str, bool]:
         """
-        Determina il ruolo dell'utente in base alla sua email.
+        Determina il ruolo dell'utente in base alla forma della email.
+        
+        LOGICA:
+        - Email contiene ".studente@" → ("student", True)
+        - Email non contiene ".studente@" → Controlla whitelist.json per assegnare ruolo
+        - Se non in whitelist → ("guest", False)
         
         Returns:
             (ruolo, è_autorizzato)
             
-        Ruoli possibili: 'student', 'docente', 'rspp', 'dirigente', 'ufficio_tecnico'
+        Ruoli possibili: 'student', 'docente', 'rspp', 'dirigente', 'ufficio_tecnico', 'guest'
         """
         email_lower = email.lower().strip()
 
-        # === STUDENTE ===
+        # === STUDENTE: Assegnazione automatica per email .studente@ ===
         if self._is_student_email(email):
-            student_whitelist = self._load_student_whitelist()
-            if not student_whitelist.get("enabled", False):
-                # Whitelist disabilitata per studenti → autorizzato
-                return ("student", True)
-            
-            whitelisted_emails = [e.lower().strip() for e in student_whitelist.get("emails", [])]
-            is_authorized = email_lower in whitelisted_emails
-            
-            if is_authorized:
-                logger.info(f"Ruolo assegnato: student (email in whitelist_studenti) → {email}")
-            else:
-                logger.warning(f"Studente non in whitelist: {email}")
-            
-            return ("student", is_authorized)
+            logger.info(f"Ruolo assegnato (automatico): student → {email}")
+            return ("student", True)
 
-        # === STAFF (Docente, RSPP, Dirigente, Ufficio Tecnico) ===
+        # === STAFF: Ricerca in whitelist per assegnare ruolo specifico ===
         staff_whitelist = self._load_staff_whitelist()
         if not staff_whitelist.get("enabled", False):
-            # Whitelist disabilitata → autorizzato come guest
-            logger.warning(f"Email non riconosciuto e whitelist disabilitata: {email}")
-            return ("guest", True)
+            logger.warning(f"Whitelist disabilitata e email non è studente: {email}")
+            return ("guest", False)
 
         staff_dict = staff_whitelist.get("staff", {})
 
-        # Controlla ogni ruolo
+        # Controlla ogni ruolo nella whitelist
         for ruolo, emails in staff_dict.items():
             emails_lower = [e.lower().strip() for e in emails]
             if email_lower in emails_lower:
-                logger.info(f"Ruolo assegnato: {ruolo} → {email}")
+                logger.info(f"Ruolo assegnato (da whitelist): {ruolo} → {email}")
                 return (ruolo, True)
 
-        # Email non trovata in whitelist
-        logger.warning(f"Email non autorizzato: {email}")
+        # Email non trovata in whitelist staff
+        logger.warning(f"Email non in whitelist: {email}")
         return ("guest", False)
 
     def is_authorized(self, email: str) -> bool:
@@ -131,23 +108,6 @@ class RoleManager:
     def get_staff_whitelist(self) -> dict:
         """Ritorna la whitelist dello staff (per admin)."""
         return self._load_staff_whitelist()
-
-    def get_student_whitelist(self) -> dict:
-        """Ritorna la whitelist degli studenti (per admin)."""
-        return self._load_student_whitelist()
-
-    def add_student(self, email: str):
-        """Aggiunge uno studente alla whitelist."""
-        with self._lock:
-            data = self._load_student_whitelist()
-            email = email.lower().strip()
-            if email not in data.get("emails", []):
-                if "emails" not in data:
-                    data["emails"] = []
-                data["emails"].append(email)
-                with open(self.whitelist_studenti_path, 'w') as f:
-                    json.dump(data, f, indent=2)
-                logger.info(f"Studente aggiunto alla whitelist: {email}")
 
     def add_staff(self, email: str, ruolo: str):
         """Aggiunge personale alla whitelist con un ruolo specifico."""
@@ -349,7 +309,7 @@ class RateLimiter:
 class SSOMiddleware:
     """
     Middleware per integrare SSO nelle applicazioni Flask.
-    Gestisce: validazione JWT, sessioni, whitelist, rate limiting.
+    Gestisce: validazione JWT, sessioni, rate limiting.
     """
 
     def __init__(self,
@@ -359,7 +319,6 @@ class SSOMiddleware:
                  jwt_audience: str = None,
                  session_timeout: int = 28800,
                  portal_url: str = "http://localhost:5000",
-                 whitelist_manager: WhitelistManager = None,
                  rate_limiter: RateLimiter = None):
 
         self.jwt_secret = jwt_secret
@@ -368,7 +327,6 @@ class SSOMiddleware:
         self.jwt_audience = jwt_audience
         self.session_timeout = session_timeout
         self.portal_url = portal_url
-        self.whitelist = whitelist_manager
         self.rate_limiter = rate_limiter
 
     def validate_jwt(self, token: str) -> dict:
