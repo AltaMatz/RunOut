@@ -26,19 +26,22 @@ class RoleManager:
     """
     Gestisce i ruoli degli utenti in base alla loro email in production.
     
-    STRATEGIA DI PRODUCTION:
-    1. Email con .studente@ → Ruolo "student", autorizzato=True (automatico, no whitelist)
-    2. Email senza .studente@ → Controlla whitelist.json staff per ruolo specifico
-    3. Non trovato in whitelist → Ruolo "guest", autorizzato=False
+    STRATEGIA DI PRODUCTION (5 ruoli):
+    1. **STUDENTE** → Email contiene ".studente@" → Autorizzato automatico
+    2. **DOCENTE** → Email formato nome.cognome@itispaleocapa.it → Autorizzato automatico
+    3. **RSPP** → Email specifica rspp@itispaleocapa.it → Controlla whitelist.json staff["rspp"]
+    4. **DIRIGENTE** → Email specifica dirigente@itispaleocapa.it → Controlla whitelist.json staff["dirigente"]
+    5. **UFFICIO_TECNICO** → Email specifica ufficiotecnico@itispaleocapa.it → Controlla whitelist.json staff["ufficio_tecnico"]
+    
+    Non trovato in whitelist → Ruolo "guest", autorizzato=False
     
     Struttura whitelist.json:
     {
         "enabled": true,
         "staff": {
-            "docente": ["mario.rossi@itispaleocapa.it", "anna.bianchi@itispaleocapa.it"],
             "rspp": ["rspp@itispaleocapa.it"],
-            "dirigente": ["preside@itispaleocapa.it"],
-            "ufficio_tecnico": ["tecnico@itispaleocapa.it"]
+            "dirigente": ["dirigente@itispaleocapa.it"],
+            "ufficio_tecnico": ["ufficiotecnico@itispaleocapa.it"]
         }
     }
     """
@@ -50,6 +53,31 @@ class RoleManager:
     def _is_student_email(self, email: str) -> bool:
         """Verifica se l'email è di uno studente (contiene .studente@)."""
         return ".studente@" in email.lower()
+
+    def _is_teacher_email(self, email: str) -> bool:
+        """
+        Verifica se l'email è di un docente.
+        Formato: nome.cognome@itispaleocapa.it (due parti separate da punto, non contiene .studente@)
+        """
+        email_lower = email.lower().strip()
+        
+        # Non è un docente se è uno studente
+        if self._is_student_email(email):
+            return False
+        
+        # Deve essere del dominio itispaleocapa.it
+        if not email_lower.endswith("@itispaleocapa.it"):
+            return False
+        
+        # Deve avere il formato nome.cognome (almeno un punto prima di @)
+        # Estrai la parte prima di @
+        local_part = email_lower.split("@")[0]
+        
+        # Deve contenere almeno un punto (nome.cognome)
+        if "." not in local_part:
+            return False
+        
+        return True
 
     def _load_staff_whitelist(self) -> dict:
         """Carica la whitelist del personale (docenti, rspp, etc)."""
@@ -65,9 +93,10 @@ class RoleManager:
         Determina il ruolo dell'utente in base alla forma della email.
         
         LOGICA:
-        - Email contiene ".studente@" → ("student", True)
-        - Email non contiene ".studente@" → Controlla whitelist.json per assegnare ruolo
-        - Se non in whitelist → ("guest", False)
+        1. Email contiene ".studente@" → ("student", True) [automatico]
+        2. Email formato nome.cognome@itispaleocapa.it → ("docente", True) [automatico]
+        3. Controlla whitelist.json per: rspp, dirigente, ufficio_tecnico
+        4. Se non trovato → ("guest", False)
         
         Returns:
             (ruolo, è_autorizzato)
@@ -81,15 +110,20 @@ class RoleManager:
             logger.info(f"Ruolo assegnato (automatico): student → {email}")
             return ("student", True)
 
-        # === STAFF: Ricerca in whitelist per assegnare ruolo specifico ===
+        # === DOCENTE: Assegnazione automatica per formato nome.cognome@itispaleocapa.it ===
+        if self._is_teacher_email(email):
+            logger.info(f"Ruolo assegnato (automatico): docente → {email}")
+            return ("docente", True)
+
+        # === STAFF: Ricerca in whitelist per assegnare ruolo specifico (rspp, dirigente, ufficio_tecnico) ===
         staff_whitelist = self._load_staff_whitelist()
         if not staff_whitelist.get("enabled", False):
-            logger.warning(f"Whitelist disabilitata e email non è studente: {email}")
+            logger.warning(f"Whitelist disabilitata e email non è studente/docente: {email}")
             return ("guest", False)
 
         staff_dict = staff_whitelist.get("staff", {})
 
-        # Controlla ogni ruolo nella whitelist
+        # Controlla ogni ruolo nella whitelist (rspp, dirigente, ufficio_tecnico)
         for ruolo, emails in staff_dict.items():
             emails_lower = [e.lower().strip() for e in emails]
             if email_lower in emails_lower:
