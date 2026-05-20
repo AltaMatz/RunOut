@@ -4,15 +4,18 @@
 
 {% block content %}
 <div class="page-container">
-    <div class="page-header">
-        <h2>EMERGENZE</h2>
-        <div class="info-bar">
-            <span class="info-item">
-                <strong>Giorno:</strong> {{ giorno_nome }}
-            </span>
-            <span class="info-item">
-                <strong>Ora:</strong> {{ ora }}
-            </span>
+    <div class="page-header-with-btn">
+        <a href="{{ url_for('dashboard') }}" class="btn-back-dashboard">← Dashboard</a>
+        <div class="page-header">
+            <h2>EMERGENZE</h2>
+            <div class="info-bar">
+                <span class="info-item">
+                    <strong>Giorno:</strong> {{ giorno_nome }}
+                </span>
+                <span class="info-item">
+                    <strong>Ora:</strong> {{ ora }}
+                </span>
+            </div>
         </div>
     </div>
 
@@ -98,4 +101,38 @@
         {% endfor %}
     </div>
 </div>
+
+<style>
+.page-header-with-btn {
+    position: relative;
+    margin-bottom: 1.5rem;
+}
+
+.btn-back-dashboard {
+    display: inline-block;
+    margin-bottom: 1rem;
+    padding: 0.6rem 1.2rem;
+    background: #2d3748;
+    color: white;
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+    border: none;
+    cursor: pointer;
+    min-height: 40px;
+    display: inline-flex;
+    align-items: center;
+}
+
+.btn-back-dashboard:hover {
+    background: #1a202c;
+    transform: translateX(-2px);
+}
+
+.btn-back-dashboard:active {
+    transform: scale(0.98);
+}
+</style>
 {% endblock %}

@@ -26,9 +26,9 @@ from config import (
     SSO_MODE, DEV_USER_EMAIL, DEV_DOCENTE_EMAIL,
     SSO_JWT_SECRET, SSO_JWT_ISSUER, SSO_JWT_AUDIENCE, SSO_PORTAL_URL,
     MAX_SESSIONS_PER_USER, MAX_SESSIONS_GLOBAL,
-    WHITELIST_FILE, WHITELIST_STUDENTI_FILE, API_TOKEN, DEBUG, SSO_CONFIG
+    WHITELIST_FILE, API_TOKEN, DEBUG, SSO_CONFIG
 )
-from shared_modules.sso_middleware import SSOMiddleware, WhitelistManager, RateLimiter, RoleManager, render_sso_error
+from shared_modules.sso_middleware import SSOMiddleware, RateLimiter, RoleManager, render_sso_error
 
 
 # ============================================================
@@ -41,8 +41,10 @@ app.secret_key = FLASK_SECRET_KEY
 app.permanent_session_lifetime = SESSION_LIFETIME_SECONDS
 app.debug = DEBUG
 
-whitelist_manager = WhitelistManager(WHITELIST_FILE)
-role_manager = RoleManager(WHITELIST_FILE, WHITELIST_STUDENTI_FILE)
+# Inizializza role manager (assegna ruoli in base alla forma dell'email e whitelist.json)
+role_manager = RoleManager(WHITELIST_FILE)
+
+# Inizializza rate limiter
 rate_limiter = RateLimiter(
     max_sessions_per_user=MAX_SESSIONS_PER_USER,
     max_sessions_global=MAX_SESSIONS_GLOBAL,
@@ -56,7 +58,6 @@ sso_middleware = SSOMiddleware(
     jwt_audience=SSO_JWT_AUDIENCE,
     session_timeout=SESSION_LIFETIME_SECONDS,
     portal_url=SSO_PORTAL_URL,
-    whitelist_manager=whitelist_manager,
     rate_limiter=rate_limiter
 )
 
@@ -761,9 +762,6 @@ with app.app_context():
     _refresh_cache_in_background()
 
 if __name__ == "__main__":
-    _start_sync_presenze_process()
-    _refresh_cache_in_background()
-    try:
-        app.run(debug=DEBUG)
-    finally:
-        _stop_sync_presenze_process()
+    from config import PORT
+    _refresh_cache_in_background()  # Precarica i dati appena il server parte
+    app.run(host='0.0.0.0', port=PORT, debug=DEBUG)
