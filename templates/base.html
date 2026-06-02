@@ -12,12 +12,12 @@
     <nav class="navbar">
         <div class="nav-container">
             <div class="nav-logo">
-                <h1>Runout</h1>
+                <h1>RUNOUT</h1>
             </div>
             {% if session.get('user') %}
             <div class="nav-user">
                 <span class="user-email">{{ session.user.email }}</span>
-                <a href="{{ url_for('logout') }}" class="logout-btn">logout</a>
+                <a href="{{ url_for('logout') }}" class="logout-btn">Esci</a>
             </div>
             {% endif %}
         </div>

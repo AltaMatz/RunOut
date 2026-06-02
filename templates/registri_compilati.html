@@ -5,8 +5,7 @@
 {% block content %}
 <div class="page-container">
     <div class="content-section">
-        <h2>REGISTRI COMPILATI</h2>
-        <p>Scarica i registri compilati per classe in formato Excel o PDF.</p>
+        <h2 class="section-title">REGISTRI COMPILATI</h2>
         
         {% if registri_per_classe %}
             <div class="registri-grid">
@@ -15,10 +14,9 @@
                 <div class="registro-header">
                     <div>
                         <div class="registro-title">Classe {{ classe_data.anno }}{{ classe_data.sezione }}</div>
-
                     </div>
                     <div class="registro-actions">
-                        <a href="{{ classe_data.download_url }}" class="registro-btn registro-btn-light">
+                        <a href="{{ classe_data.download_url }}" class="registro-btn registro-btn-main">
                             Scarica Excel
                         </a>
                         <a href="{{ classe_data.download_pdf_url }}" class="registro-btn registro-btn-outline">
@@ -48,4 +46,3 @@
     </div>
 </div>
 {% endblock %}
-

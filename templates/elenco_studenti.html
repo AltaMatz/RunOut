@@ -25,7 +25,7 @@
         <div class="error-icon">⚠️</div>
         <div class="error-content">
             <h3>Nessuna emergenza in corso</h3>
-            <p>Il form è disabilitato perché non c'è emergenza attiva. Contatta l'RSPP per avviarne una.</p>
+            <p>Il registro non è compilabile perché non c'è alcuna emergenza in corso</p>
         </div>
     </div>
     {% endif %}
@@ -209,7 +209,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 saveMessage.className = 'save-message error';
             } finally {
                 saveBtn.disabled = false;
-                saveBtn.textContent = '💾 Salva Presenze';
+                saveBtn.textContent = 'Salva Presenze';
                 
                 // Nascondi il messaggio dopo 5 secondi
                 setTimeout(() => {

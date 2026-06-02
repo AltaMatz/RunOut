@@ -710,3 +710,162 @@ body {
     }
 }
 
+.section-title {
+    color: #2d3748;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    margin-bottom: 2rem;
+}
+
+/* Griglia dei Registri */
+.registri-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    text-align: left;
+}
+
+/* Container Card principale con colore Blu-Grigio Scuro */
+.registro-card {
+    background: #2d3748;
+    color: #ffffff;
+    border-radius: 14px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 15px rgba(45, 55, 72, 0.15);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.registro-header {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 1rem;
+    margin-bottom: 1rem;
+}
+
+/* Titolo della classe evidenziato in Giallo-Verde */
+.registro-title {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #e2f75c;
+}
+
+.registro-actions {
+    display: flex;
+    gap: 0.75rem;
+    width: 100%;
+}
+
+/* Bottoni */
+.registro-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.6rem 1.2rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-decoration: none;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    flex: 1;
+    text-align: center;
+    min-height: 44px;
+}
+
+/* Bottone Principale Giallo-Verde con testo scuro */
+.registro-btn-main {
+    background: #e2f75c;
+    color: #2d3748;
+    border: 2px solid #e2f75c;
+}
+
+.registro-btn-main:active {
+    transform: scale(0.97);
+    opacity: 0.9;
+}
+
+/* Bottone Outline (Bordo chiaro/neon su sfondo scuro) */
+.registro-btn-outline {
+    background: transparent;
+    color: #e2f75c;
+    border: 2px solid rgba(226, 247, 92, 0.4);
+}
+
+.registro-btn-outline:active {
+    background: rgba(226, 247, 92, 0.1);
+    border-color: #e2f75c;
+}
+
+/* Metadati e Pill */
+.registro-meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.registro-meta-pill {
+    background: rgba(255, 255, 255, 0.08);
+    color: #e2e8f0;
+    padding: 0.4rem 0.8rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.registro-meta-pill strong {
+    color: #e2f75c; /* Label dei metadati in giallo-verde */
+    margin-right: 0.25rem;
+}
+
+/* Stato Vuoto */
+.empty-state {
+    padding: 3rem 1.5rem;
+    background: #edf2f7;
+    color: #718096;
+    border-radius: 12px;
+    font-style: italic;
+    border: 2px dashed #cbd5e0;
+}
+
+/* Media Queries per Tablet e Desktop */
+@media (min-width: 768px) {
+    .registri-grid {
+        grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .registro-header {
+        flex-direction: row;
+        align-items: center;
+    }
+
+    .registro-actions {
+        width: auto;
+    }
+
+    .registro-btn {
+        flex: none;
+    }
+}
+
+@media (min-width: 1024px) {
+    .registro-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(45, 55, 72, 0.25);
+    }
+
+    .registro-btn-main:hover {
+        background: #d4ee3a;
+        border-color: #d4ee3a;
+        box-shadow: 0 4px 12px rgba(226, 247, 92, 0.2);
+    }
+
+    .registro-btn-outline:hover {
+        border-color: #e2f75c;
+        background: rgba(226, 247, 92, 0.05);
+    }
+}

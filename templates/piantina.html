@@ -4,153 +4,216 @@
 
 {% block content %}
 <div class="page-container">
-    <div class="content-section">
-        <h2>PIANTINA</h2>
-        <p>Consulta le planimetrie dell'istituto per edificio e piano.</p>
+    <div class="piantina-section">
 
-        <div class="map-tabs" role="tablist" aria-label="Selezione planimetria">
-            <button class="map-tab is-active" type="button" data-key="integrale">PIANTINA INTEGRALE</button>
-            <button class="map-tab" type="button" data-key="centrale">SEDE CENTRALE</button>
-            <button class="map-tab" type="button" data-key="elettronica">PALAZZINA ELETTRONICA</button>
-            <button class="map-tab" type="button" data-key="meccanica">PALAZZINA MECCANICA</button>
-            <button class="map-tab" type="button" data-key="tessile">PALAZZINA TESSILE</button>
-            <button class="map-tab" type="button" data-key="informatica">PALAZZINA INFORMATICA</button>
+        <div class="piantina-header">
+            <h2 class="section-title">PIANTINA — VIE DI FUGA</h2>
         </div>
 
-        <div class="map-gallery" id="mapGallery" aria-live="polite"></div>
+        <div class="content">
+            <p class="section-label">Seleziona edificio</p>
+
+            <div class="map-tabs" role="tablist" aria-label="Selezione planimetria">
+                <button class="map-tab is-active" type="button" data-key="integrale">Piantina integrale</button>
+                <button class="map-tab" type="button" data-key="centrale">Sede centrale</button>
+                <button class="map-tab" type="button" data-key="elettronica">Palazzina elettronica</button>
+                <button class="map-tab" type="button" data-key="meccanica">Palazzina meccanica</button>
+                <button class="map-tab" type="button" data-key="tessile">Palazzina tessile</button>
+                <button class="map-tab" type="button" data-key="informatica">Palazzina informatica</button>
+            </div>
+
+            <div class="map-gallery" id="mapGallery" aria-live="polite"></div>
+        </div>
+
     </div>
 </div>
 
 <style>
+/* ==========================================================================
+   Sezione Planimetrie e Vie di Fuga (Stile Coordinato)
+   ========================================================================== */
+
+.piantina-section {
+    background: #f8fafc;
+    min-height: 100vh;
+}
+
+.piantina-header {
+    background: #ffffff;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 2.5rem 2rem;
+}
+
+.piantina-header .section-title {
+    margin: 0;
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: #2d3748;
+    letter-spacing: -0.5px;
+}
+
+.content {
+    padding: 2rem;
+}
+
+.section-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: #718096;
+    margin-bottom: 1rem;
+}
+
+/* Navigazione Tab */
+.map-tabs {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 0.5rem;
+    margin-bottom: 2rem;
+}
+
+.map-tab {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 0.75rem 0.5rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #4a5568;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+}
+
+.map-tab:hover {
+    border-color: #cbd5e0;
+    color: #2d3748;
+    background: #f7fafc;
+}
+
+.map-tab:focus-visible {
+    outline: 2px solid #e2f75c;
+    outline-offset: 2px;
+}
+
+.map-tab.is-active {
+    background: #2d3748;
+    color: #e2f75c;
+    border-color: #2d3748;
+    box-shadow: 0 4px 12px rgba(45, 55, 72, 0.15);
+}
+
+/* Galleria e Card Piantine */
+.map-gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+    gap: 1.5rem;
+}
+
+.map-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02);
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s ease;
+}
+
+.map-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 20px rgba(45, 55, 72, 0.08);
+    border-color: #cbd5e0;
+}
+
+.map-card-title {
+    margin: 0;
+    padding: 1rem 1.25rem;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #e2f75c;
+    background: #2d3748;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.map-image-wrap {
+    height: 380px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #ffffff;
+    padding: 1rem;
+}
+
+.map-image {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: contain;
+}
+
+.map-card-actions {
+    display: flex;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+    border-top: 1px solid #e2e8f0;
+    background: #f7fafc;
+    margin-top: auto;
+}
+
+/* Bottoni di Azione */
+.map-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.6rem 1.2rem;
+    border-radius: 8px;
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: 600;
+    background: #2d3748;
+    color: #e2f75c;
+    transition: all 0.15s ease;
+    flex: 1;
+    min-height: 40px;
+}
+
+.map-link:hover {
+    background: #1a202c;
+}
+
+.map-link-secondary {
+    background: #ffffff;
+    color: #2d3748;
+    border: 1px solid #cbd5e0;
+}
+
+.map-link-secondary:hover {
+    background: #f1f5f9;
+    border-color: #94a3b8;
+}
+
+/* Responsive Layout */
+@media (max-width: 1100px) {
     .map-tabs {
-        display: grid;
         grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 0.6rem;
-        margin-top: 1rem;
-        max-width: 1040px;
-        margin-left: auto;
-        margin-right: auto;
     }
+}
 
-    .map-tab {
-        border: 1px solid #cbd5e0;
-        background: #ffffff;
-        color: #1a202c;
-        border-radius: 8px;
-        padding: 0.65rem 0.8rem;
-        font-size: 0.9rem;
-        font-weight: 700;
-        cursor: pointer;
-        transition: all 0.2s ease;
+@media (max-width: 768px) {
+    .piantina-header { padding: 1.5rem; }
+    .content { padding: 1.5rem; }
+    .map-gallery { grid-template-columns: 1fr; }
+    .map-image-wrap { height: 280px; }
+}
+
+@media (max-width: 480px) {
+    .map-tabs {
+        grid-template-columns: 1fr;
     }
-
-    .map-tab:hover,
-    .map-tab:focus-visible {
-        border-color: #2d3748;
-        outline: none;
-    }
-
-    .map-tab.is-active {
-        background: #2d3748;
-        color: #ffffff;
-        border-color: #2d3748;
-    }
-
-    .map-gallery {
-        margin-top: 1rem;
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: center;
-        gap: 1rem;
-    }
-
-    .map-card {
-        flex: 1 1 460px;
-        max-width: 520px;
-        border: 1px solid #d9d9d9;
-        border-radius: 10px;
-        background: #f7f7f7;
-        overflow: hidden;
-    }
-
-    .map-card-title {
-        margin: 0;
-        padding: 0.7rem 0.9rem;
-        font-size: 0.98rem;
-        font-weight: 700;
-        color: #1a202c;
-        border-bottom: 1px solid #e2e8f0;
-        background: #edf2f7;
-    }
-
-    .map-image-wrap {
-        height: 360px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: #ffffff;
-    }
-
-    .map-card-actions {
-        display: flex;
-        justify-content: center;
-        gap: 0.6rem;
-        padding: 0.75rem;
-        border-top: 1px solid #e2e8f0;
-        background: #f8fafc;
-        flex-wrap: wrap;
-    }
-
-    .map-image {
-        width: 100%;
-        height: 100%;
-        display: block;
-        object-fit: contain;
-    }
-
-    .map-link {
-        display: inline-block;
-        padding: 0.6rem 1rem;
-        border-radius: 8px;
-        text-decoration: none;
-        font-weight: 600;
-        background: #2d3748;
-        color: #ffffff;
-    }
-
-    .map-link-secondary {
-        background: #edf2f7;
-        color: #2d3748;
-    }
-
-    @media (max-width: 920px) {
-        .map-tabs {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
-
-        .map-card {
-            flex-basis: 380px;
-        }
-    }
-
-    @media (max-width: 640px) {
-        .map-tabs {
-            grid-template-columns: 1fr;
-        }
-
-        .map-gallery {
-            gap: 0.8rem;
-        }
-
-        .map-image-wrap {
-            height: 280px;
-        }
-
-        .map-card {
-            flex-basis: 100%;
-            max-width: 100%;
-        }
-    }
+}
 </style>
 
 <script>
@@ -165,7 +228,7 @@
         integrale: {
             sectionTitle: "Piantina integrale",
             images: [
-                { file: "piantina.jpg", title: "Piantina integrale" }
+                { file: "piantina.jpg", title: "ITIS P. Paleocapa" }
             ]
         },
         centrale: {
@@ -217,21 +280,25 @@
 
     function renderSection(sectionKey) {
         const selected = plansBySection[sectionKey];
-        if (!selected) {
-            return;
-        }
+        if (!selected) return;
 
         gallery.innerHTML = selected.images.map((img) => {
             const src = `${baseImagePath}/${img.file}`;
             return `
                 <article class="map-card">
-                    <h3 class="map-card-title">${selected.sectionTitle} - ${img.title}</h3>
+                    <h3 class="map-card-title">${selected.sectionTitle} — ${img.title}</h3>
                     <div class="map-image-wrap">
                         <img class="map-image" src="${src}" alt="${selected.sectionTitle} ${img.title}">
                     </div>
                     <div class="map-card-actions">
-                        <a href="${src}" target="_blank" rel="noopener" class="map-link">Apri immagine</a>
-                        <a href="${src}" download class="map-link map-link-secondary">Scarica immagine</a>
+                        <a href="${src}" target="_blank" rel="noopener" class="map-link">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px; height:16px; margin-right:6px;"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                            Apri immagine
+                        </a>
+                        <a href="${src}" download class="map-link map-link-secondary">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px; height:16px; margin-right:6px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                            Scarica
+                        </a>
                     </div>
                 </article>
             `;
@@ -243,12 +310,9 @@
     }
 
     tabs.forEach((tab) => {
-        tab.addEventListener("click", () => {
-            renderSection(tab.dataset.key);
-        });
+        tab.addEventListener("click", () => renderSection(tab.dataset.key));
     });
 
     renderSection("integrale");
 </script>
 {% endblock %}
-

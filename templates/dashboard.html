@@ -6,8 +6,7 @@
 <div class="page-container">
     <div class="dashboard-header">
         <div class="user-info">
-            <h2>Benvenuto, {{ user.name or user.email }}</h2>
-            <p class="user-email">{{ user.email }}</p>
+            <h2>Benvenuto {{ user.name or user.email }}!</h2>
             <div class="user-role">
                 <span class="badge badge-{{ user.role }}">
                     {% if user.role == 'student' %}

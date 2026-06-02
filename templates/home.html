@@ -5,40 +5,39 @@
 {% block content %}
 <div class="page-container">
     <div class="welcome-section">
-        <h2>Benvenuto su Runout</h2>
-        <p>Sistema di gestione emergenze</p>
+        <h2 class="section-title">Benvenuto su Runout</h2>
         
         {% if user %}
             {# UTENTE AUTENTICATO #}
             <div class="auth-card">
-                <p>✓ Accesso effettuato come: <strong>{{ user.email }}</strong></p>
-                <p>
+                <p class="status-message">✓ Accesso effettuato come: <strong>{{ user.email }}</strong></p>
+                <div class="auth-actions">
                     <a href="{{ url_for('dashboard') }}" class="btn btn-primary">
                         Vai alla Dashboard
                     </a>
                     <a href="{{ url_for('logout') }}" class="btn btn-secondary">
                         Esci
                     </a>
-                </p>
+                </div>
             </div>
         {% else %}
             {# UTENTE NON AUTENTICATO #}
             <div class="login-card">
                 {% if sso_mode == 'dev' %}
-                    <p>🔧 <strong>MODALITÀ DEV</strong> - Seleziona quale email usare per testare il login.</p>
+                    <p class="dev-warning">🔧 <strong>MODALITÀ DEV</strong> - Seleziona quale email usare per testare il login</p>
                     <a href="{{ url_for('dev_login_choice') }}" class="btn btn-primary btn-large">
                         🧪 Scegli Email di Test
                     </a>
-                    <p style="margin-top: 16px; font-size: 12px; color: rgba(255,255,255,0.7);">
+                    <p class="sub-text dev-sub-text">
                         ⚠️ Questa modalità è solo per testing locale
                     </p>
                 {% else %}
-                    <p>Per accedere al sistema, effettua il login.</p>
+                    <p class="login-message">Per accedere al sistema, effettua il login</p>
                     <a href="{{ url_for('sso_login') }}" class="btn btn-primary btn-large">
                         🔐 Accedi
                     </a>
-                    <p style="margin-top: 16px; font-size: 12px; color: #666;">
-                        L'accesso è gestito tramite il portale SSO della scuola.
+                    <p class="sub-text">
+                        L'accesso è gestito tramite il portale SSO scolastico
                     </p>
                 {% endif %}
             </div>
@@ -47,54 +46,112 @@
 </div>
 
 <style>
-.auth-card, .login-card {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 32px;
-    border-radius: 16px;
-    margin-top: 24px;
-    text-align: center;
-    box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+.welcome-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
 }
 
-.auth-card p, .login-card p {
-    margin: 12px 0;
-    font-size: 16px;
+.auth-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    justify-content: center;
+    margin-top: 1.5rem;
 }
 
-.btn {
-    display: inline-block;
-    padding: 12px 24px;
+/* Testi interni alle card */
+.status-message {
+    font-size: 1.1rem;
+    color: #ffffff;
+}
+
+.status-message strong {
+    color: #e2f75c;
+}
+
+.login-message {
+    font-size: 1.1rem;
+    color: #e2e8f0;
+    margin-bottom: 1.5rem !important;
+}
+
+.dev-warning {
+    color: #ffffff;
+    background: rgba(237, 137, 54, 0.2); /* Sfondo arancio trasparente molto soft per dev mode */
+    padding: 0.75rem 1rem;
     border-radius: 8px;
+    border: 1px solid rgba(237, 137, 54, 0.4);
+    margin-bottom: 1.5rem !important;
+}
+
+/* Testi piccoli di spiegazione in basso */
+.sub-text {
+    margin-top: 1.5rem !important;
+    font-size: 0.8rem !important;
+    color: #a0aec0; /* Grigio chiaro per risaltare sul blu-grigio scuro */
+}
+
+.dev-sub-text {
+    color: #fc8181; /* Rosso chiaro per l'avviso di sicurezza in modalità dev */
+}
+
+/* Bottoni di Sistema */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.75rem 1.5rem;
+    border-radius: 10px;
     text-decoration: none;
-    font-weight: 500;
-    margin: 8px;
+    font-weight: 600;
     border: none;
     cursor: pointer;
-    font-size: 16px;
-    transition: opacity 0.2s;
+    font-size: 0.95rem;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    min-height: 48px; /* Touch target ottimale */
 }
 
-.btn:hover {
-    opacity: 0.9;
-}
-
+/* Bottone Primario (Giallo-Verde, testo scuro) */
 .btn-primary {
-    background: white;
-    color: #667eea;
+    background: #e2f75c;
+    color: #2d3748;
+    box-shadow: 0 4px 12px rgba(226, 247, 92, 0.15);
 }
 
+/* Bottone Secondario (Outline chiaro) */
 .btn-secondary {
-    background: rgba(255,255,255,0.2);
-    color: white;
-    border: 1px solid white;
+    background: rgba(255, 255, 255, 0.05);
+    color: #ffffff;
+    border: 2px solid rgba(255, 255, 255, 0.2);
 }
 
+/* Bottone Largo (Login principale) */
 .btn-large {
-    padding: 16px 40px;
-    font-size: 18px;
+    padding: 1rem 2.5rem;
+    font-size: 1.1rem;
     width: 100%;
-    max-width: 280px;
+    max-width: 320px;
+}
+
+/* Stati di Hover e Active (Desktop e Mobile) */
+@media (min-width: 1024px) {
+    .btn-primary:hover {
+        background: #d4ee3a;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 15px rgba(226, 247, 92, 0.25);
+    }
+
+    .btn-secondary:hover {
+        background: rgba(255, 255, 255, 0.1);
+        border-color: rgba(255, 255, 255, 0.4);
+        transform: translateY(-2px);
+    }
+}
+
+.btn:active {
+    transform: translateY(1px) scale(0.98);
 }
 </style>
 {% endblock %}
