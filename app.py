@@ -1025,7 +1025,7 @@ def registri_compilati():
 
 
 @app.route("/registri-compilati/download/<classe_key>")
-@role_required("docente")
+@role_required(['rspp', 'dirigente', 'ufficio_tecnico'])
 def download_registro_compilato(classe_key):
     try:
         registri_per_classe = _load_registri_per_classe()
@@ -1051,7 +1051,7 @@ def download_registro_compilato(classe_key):
 
 
 @app.route("/registri-compilati/download/<classe_key>/pdf")
-@role_required("docente")
+@role_required(['rspp', 'dirigente', 'ufficio_tecnico'])
 def download_registro_compilato_pdf(classe_key):
     try:
         registri_per_classe = _load_registri_per_classe()
