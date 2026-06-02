@@ -455,6 +455,20 @@ def emergenze():
     user = session.get('user', {})
     user_role = user.get('role', '')
     
+    # Se emergenza non attiva, nessuno vede l'elenco delle classi
+    if not emergenza_status["active"]:
+        return render_template(
+            "emergenze.html",
+            risultati=[],
+            giorno=c["giorno"],
+            giorno_nome=c["giorno_nome"],
+            ora=c["ora"],
+            total_aule=0,
+            num_with_class=0,
+            emergenza_attiva=emergenza_status["active"],
+            is_ufficio_tecnico=(user_role == 'ufficio_tecnico'),
+        )
+    
     return render_template(
         "emergenze.html",
         risultati=c["risultati_filtrati"],
@@ -464,7 +478,7 @@ def emergenze():
         total_aule=c["total_aule"],
         num_with_class=c["num_with_class"],
         emergenza_attiva=emergenza_status["active"],
-        is_rspp=(user_role == 'rspp'),
+        is_ufficio_tecnico=(user_role == 'ufficio_tecnico'),
     )
 
 @app.route("/api/emergenze/refresh", methods=["POST"])
@@ -478,6 +492,10 @@ def refresh_emergenze():
 @app.route("/elencoStudenti/<classe>/<aula>") # ROTTA ELENCO STUDENTI
 @role_required(['docente', 'rspp', 'dirigente', 'ufficio_tecnico'])  # Docenti e staff
 def elencoStudenti(classe, aula):
+    # Verifica che l'emergenza sia attiva
+    emergenza_status = _get_emergenza_status()
+    if not emergenza_status["active"]:
+        return redirect(url_for('emergenze'))
     
     url = f"https://sipal.itispaleocapa.it/api/proxySipal/v1/studenti/classe/elenco/{classe}"
     headers = {
@@ -485,8 +503,6 @@ def elencoStudenti(classe, aula):
         "Authorization": f"Bearer {API_TOKEN}",
         "User-Agent": "Mozilla/5.0"
     }
-    
-    emergenza_status = _get_emergenza_status()
     
     try:
         response = requests.get(url, headers=headers)
@@ -645,9 +661,10 @@ def registri_compilati():
 @role_required(['docente', 'rspp', 'dirigente', 'ufficio_tecnico'])  # Docenti e staff
 def salva_presenze():
     """
-    Salva le presenze degli studenti in un file JSON.
-    Struttura del file: presenze.json contiene un array di oggetti, uno per ogni salvataggio.
+    Salva le presenze degli studenti nel database SQLite.
     """
+    import sqlite3
+    
     try:
         # Controlla se l'emergenza è attiva
         emergenza_status = _get_emergenza_status()
@@ -700,47 +717,81 @@ def salva_presenze():
                 "studenti": stati_non_validi
             }), 400
         
-        # Prepara il record da salvare
+        # Salva nel database SQLite
         now = datetime.now()
-        record = {
-            "classe": classe,
-            "data": now.strftime("%Y-%m-%d"),
-            "ora": now.strftime("%H:%M:%S"),
-            "timestamp": now.isoformat(),
-            "presenze": presenze
-        }
+        db_path = "runout.db"
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
         
-        # Leggi il file esistente (se presente)
-        # Usa il percorso relativo alla directory del progetto
-        file_path = os.path.join(os.path.dirname(__file__), "presenze.json")
-        if os.path.exists(file_path):
-            with open(file_path, 'r', encoding='utf-8') as f:
-                try:
-                    all_presenze = json.load(f)
-                except json.JSONDecodeError:
-                    all_presenze = []
-        else:
-            all_presenze = []
+        try:
+            # Estrae anno e sezione dalla classe (es. "1A" -> anno=1, sezione="A")
+            anno = classe[0]
+            sezione = classe[1:].upper()
+            
+            # Verifica se la classe esiste
+            cursor.execute("SELECT ClasseID FROM Classi WHERE Anno = ? AND Sezione = ?", (anno, sezione))
+            classe_row = cursor.fetchone()
+            
+            if not classe_row:
+                return jsonify({
+                    "error": "Classe non trovata",
+                    "message": f"La classe {classe} non esiste nel database"
+                }), 400
+            
+            classe_id = classe_row[0]
+            
+            # Cancella i vecchi record per questa classe (per evitare duplicati)
+            cursor.execute("DELETE FROM Registri WHERE Classe = ?", (classe_id,))
+            
+            # Mappa degli stati: PRESENTE=1, ASSENTE=2, DISPERSO=3
+            stato_mapping = {
+                "PRESENTE": 1,
+                "ASSENTE": 2,
+                "DISPERSO": 3
+            }
+            
+            # Inserisci i nuovi record
+            for nome_studente, stato_str in presenze.items():
+                stato_id = stato_mapping.get(str(stato_str).strip().upper(), 0)
+                
+                # Separa cognome e nome (formato "Cognome Nome")
+                parti = nome_studente.split(' ', 1)
+                cognome = parti[0] if len(parti) > 0 else ""
+                nome = parti[1] if len(parti) > 1 else ""
+                
+                cursor.execute("""
+                    INSERT INTO Registri (Classe, Cognome, Nome, Stato)
+                    VALUES (?, ?, ?, ?)
+                """, (classe_id, cognome, nome, stato_id))
+            
+            # Registra il sync log
+            cursor.execute("""
+                INSERT INTO SyncLog (Classe, Data, Ora, Timestamp, ImportedAt)
+                VALUES (?, ?, ?, ?, ?)
+            """, (classe_id, now.strftime("%Y-%m-%d"), now.strftime("%H:%M:%S"), now.isoformat(), now.isoformat()))
+            
+            conn.commit()
+            
+            return jsonify({
+                "success": True,
+                "message": f"Presenze salvate per la classe {classe}",
+                "record": {
+                    "classe": classe,
+                    "data": now.strftime("%Y-%m-%d"),
+                    "ora": now.strftime("%H:%M:%S"),
+                    "studenti_salvati": len(presenze)
+                }
+            }), 200
         
-        # Aggiungi il nuovo record
-        all_presenze.append(record)
-        
-        # Salva il file
-        with open(file_path, 'w', encoding='utf-8') as f:
-            json.dump(all_presenze, f, ensure_ascii=False, indent=2)
-        
-        return jsonify({
-            "success": True,
-            "message": f"Presenze salvate per la classe {classe}",
-            "record": record
-        }), 200
+        finally:
+            conn.close()
         
     except Exception as e:
         return jsonify({"error": f"Errore durante il salvataggio: {str(e)}"}), 500
 
 
 @app.route("/api/emergenze/avvia", methods=["POST"])
-@role_required(['rspp'])  # Solo RSPP
+@role_required(['ufficio_tecnico'])  # Solo Ufficio Tecnico
 def avvia_emergenza():
     """
     API per avviare un'emergenza. Solo RSPP può accedere.
@@ -757,7 +808,7 @@ def avvia_emergenza():
 
 
 @app.route("/api/emergenze/termina", methods=["POST"])
-@role_required(['rspp'])  # Solo RSPP
+@role_required(['ufficio_tecnico'])  # Solo Ufficio Tecnico
 def termina_emergenza():
     """
     API per terminare un'emergenza. Solo RSPP può accedere.
