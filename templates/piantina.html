@@ -7,7 +7,7 @@
     <div class="piantina-section">
 
         <div class="piantina-header">
-            <h2>PIANTINA - VIE DI FUGA</h2>
+            <h2 class="section-title">PIANTINA — VIE DI FUGA</h2>
         </div>
 
         <div class="content">
@@ -29,75 +29,67 @@
 </div>
 
 <style>
+/* ==========================================================================
+   Sezione Planimetrie e Vie di Fuga (Stile Coordinato)
+   ========================================================================== */
+
 .piantina-section {
-    background: #f5f6f0;
+    background: #f8fafc;
     min-height: 100vh;
 }
 
 .piantina-header {
     background: #ffffff;
-    border-bottom: 1px solid #e8e9e3;
-    padding: 48px 40px;
-    text-align: center;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 2.5rem 2rem;
 }
 
-.piantina-header-left {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 4px;
-}
-
-.logo-text {
-    font-size: 17px;
-    font-weight: 600;
-    color: #242935;
-}
-
-.piantina-header p {
-    font-size: 20px;
-    font-weight: 500;
-    color: #242935;
+.piantina-header .section-title {
     margin: 0;
-    line-height: 1.4;
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: #2d3748;
+    letter-spacing: -0.5px;
 }
 
 .content {
-    padding: 32px 40px 40px;
+    padding: 2rem;
 }
 
 .section-label {
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 1px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
     text-transform: uppercase;
-    color: #8a8f7a;
-    margin-bottom: 16px;
+    color: #718096;
+    margin-bottom: 1rem;
 }
 
+/* Navigazione Tab */
 .map-tabs {
     display: grid;
     grid-template-columns: repeat(6, minmax(0, 1fr));
-    gap: 8px;
-    margin-bottom: 24px;
+    gap: 0.5rem;
+    margin-bottom: 2rem;
 }
 
 .map-tab {
     background: #ffffff;
-    border: 1px solid #e8e9e3;
-    border-radius: 8px;
-    padding: 10px 12px;
-    font-size: 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 0.75rem 0.5rem;
+    font-size: 0.85rem;
     font-weight: 600;
-    color: #5c6250;
+    color: #4a5568;
     cursor: pointer;
-    transition: border-color 0.15s, background 0.15s, color 0.15s;
+    transition: all 0.2s ease;
     text-align: center;
 }
 
 .map-tab:hover {
-    border-color: #c5db3a;
-    color: #242935;
+    border-color: #cbd5e0;
+    color: #2d3748;
+    background: #f7fafc;
 }
 
 .map-tab:focus-visible {
@@ -106,48 +98,53 @@
 }
 
 .map-tab.is-active {
-    background: #242935;
+    background: #2d3748;
     color: #e2f75c;
-    border-color: #242935;
+    border-color: #2d3748;
+    box-shadow: 0 4px 12px rgba(45, 55, 72, 0.15);
 }
 
+/* Galleria e Card Piantine */
 .map-gallery {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 16px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+    gap: 1.5rem;
 }
 
 .map-card {
-    flex: 1 1 460px;
-    max-width: 540px;
     background: #ffffff;
-    border: 1px solid #e8e9e3;
-    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
     overflow: hidden;
-    transition: border-color 0.15s, box-shadow 0.15s;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02);
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s ease;
 }
 
 .map-card:hover {
-    border-color: #c5db3a;
-    box-shadow: 0 2px 12px rgba(226, 247, 92, 0.18);
+    transform: translateY(-4px);
+    box-shadow: 0 12px 20px rgba(45, 55, 72, 0.08);
+    border-color: #cbd5e0;
 }
 
 .map-card-title {
     margin: 0;
-    padding: 12px 16px;
-    font-size: 13px;
-    font-weight: 600;
+    padding: 1rem 1.25rem;
+    font-size: 0.95rem;
+    font-weight: 700;
     color: #e2f75c;
-    border-bottom: 1px solid #e8e9e3;
-    background: #f5f6f0;
+    background: #2d3748;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .map-image-wrap {
-    height: 360px;
+    height: 380px;
     display: flex;
     align-items: center;
     justify-content: center;
     background: #ffffff;
+    padding: 1rem;
 }
 
 .map-image {
@@ -159,63 +156,57 @@
 
 .map-card-actions {
     display: flex;
-    gap: 8px;
-    padding: 12px 16px;
-    border-top: 1px solid #e8e9e3;
-    background: #f5f6f0;
-    flex-wrap: wrap;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+    border-top: 1px solid #e2e8f0;
+    background: #f7fafc;
+    margin-top: auto;
 }
 
+/* Bottoni di Azione */
 .map-link {
-    display: inline-block;
-    padding: 8px 16px;
-    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.6rem 1.2rem;
+    border-radius: 8px;
     text-decoration: none;
-    font-size: 13px;
+    font-size: 0.85rem;
     font-weight: 600;
-    background: #242935;
+    background: #2d3748;
     color: #e2f75c;
-    transition: background 0.15s;
+    transition: all 0.15s ease;
+    flex: 1;
+    min-height: 40px;
 }
 
 .map-link:hover {
-    background: #1a1f28;
+    background: #1a202c;
 }
 
 .map-link-secondary {
     background: #ffffff;
-    color: #e2f75c;
-    border: 1px solid #e8e9e3;
+    color: #2d3748;
+    border: 1px solid #cbd5e0;
 }
 
 .map-link-secondary:hover {
-    background: #f5f6f0;
-    border-color: #c5db3a;
+    background: #f1f5f9;
+    border-color: #94a3b8;
 }
 
+/* Responsive Layout */
 @media (max-width: 1100px) {
     .map-tabs {
         grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 }
 
-@media (max-width: 700px) {
-    .map-tabs {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-    .content {
-        padding: 24px 20px 32px;
-    }
-    .piantina-header {
-        padding: 20px;
-    }
-    .map-card {
-        flex-basis: 100%;
-        max-width: 100%;
-    }
-    .map-image-wrap {
-        height: 260px;
-    }
+@media (max-width: 768px) {
+    .piantina-header { padding: 1.5rem; }
+    .content { padding: 1.5rem; }
+    .map-gallery { grid-template-columns: 1fr; }
+    .map-image-wrap { height: 280px; }
 }
 
 @media (max-width: 480px) {
@@ -237,7 +228,7 @@
         integrale: {
             sectionTitle: "Piantina integrale",
             images: [
-                { file: "piantina.jpg", title: "Piantina integrale" }
+                { file: "piantina.jpg", title: "ITIS P. Paleocapa" }
             ]
         },
         centrale: {
@@ -300,8 +291,14 @@
                         <img class="map-image" src="${src}" alt="${selected.sectionTitle} ${img.title}">
                     </div>
                     <div class="map-card-actions">
-                        <a href="${src}" target="_blank" rel="noopener" class="map-link">Apri immagine</a>
-                        <a href="${src}" download class="map-link map-link-secondary">Scarica immagine</a>
+                        <a href="${src}" target="_blank" rel="noopener" class="map-link">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px; height:16px; margin-right:6px;"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                            Apri immagine
+                        </a>
+                        <a href="${src}" download class="map-link map-link-secondary">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px; height:16px; margin-right:6px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                            Scarica
+                        </a>
                     </div>
                 </article>
             `;

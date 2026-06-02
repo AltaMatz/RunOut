@@ -3,38 +3,43 @@
 {% block title %}Emergenze - Runout{% endblock %}
 
 {% block content %}
-<div class="page-container">
+<div class="page-container emergenza-page">
     <div class="emergenza-section">
 
         <div class="page-header">
-            <a href="{{ url_for('dashboard') }}" class="btn-back">← Indietro</a>
-            <h2>EMERGENZE</h2>
+            <a href="{{ url_for('dashboard') }}" class="btn-back">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 16px; height: 16px; margin-right: 6px;"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                Indietro
+            </a>
+            <h2 class="section-title">GESTIONE EMERGENZE</h2>
         </div>
 
         <div class="content">
-            <!-- PULSANTE AVVIA/TERMINA EMERGENZA - Solo Ufficio Tecnico -->
             {% if is_ufficio_tecnico %}
             <div class="emergenza-controls">
                 {% if emergenza_attiva %}
                 <button id="btn-termina-emergenza" class="btn-emergenza termina" data-action="termina">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 20px; height: 20px;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>
                     TERMINA EMERGENZA
                 </button>
-                <p class="status-label attiva">🟢 Emergenza in corso</p>
+                <p class="status-label attiva">🟢 Stato attuale: Emergenza in corso</p>
                 {% else %}
                 <button id="btn-avvia-emergenza" class="btn-emergenza avvia" data-action="avvia">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 20px; height: 20px;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
                     AVVIA EMERGENZA
                 </button>
                 {% endif %}
             </div>
             {% endif %}
 
-            <!-- MESSAGGIO DI ERRORE - Emergenza non attiva -->
             {% if not emergenza_attiva and not is_ufficio_tecnico %}
             <div class="error-banner">
-                <div class="error-icon">⚠️</div>
+                <div class="error-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 24px; height: 24px;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                </div>
                 <div class="error-message">
-                    <h3>Nessuna emergenza in corso</h3>
-                    <p>Al momento non puoi compilare nessuno dei seguenti registri</p>
+                    <h3>Nessuna emergenza attiva</h3>
+                    <p>Non ci sono procedure di evacuazione attive al momento</p>
                 </div>
             </div>
             {% endif %}
@@ -46,458 +51,430 @@
                 </div>
                 <div class="stat-card success">
                     <div class="stat-number">{{ num_with_class }}</div>
-                    <div class="stat-label">Aule piene</div>
+                    <div class="stat-label">Aule Piene</div>
                 </div>
                 <div class="stat-card error">
                     <div class="stat-number">{{ total_aule - num_with_class }}</div>
-                    <div class="stat-label">Aule vuote</div>
+                    <div class="stat-label">Aule Vuote</div>
                 </div>
             </div>
-
 
             <div class="classi-grid">
-        {% for risultato in risultati %}
-        <a href="{{ url_for('elencoStudenti', classe=risultato.classe, aula=risultato.aula) }}" class="classe-card-link">
-        <div class="classe-card {% if risultato.errore %}error-card{% else %}success-card{% endif %}">
-            <div class="classe-header">
-                <h3 class="classe-nome">{{ risultato.classe }}</h3>
-            </div>
-            
-            {% if risultato.errore %}
-                <div class="classe-content">
-                    <p class="error-message">{{ risultato.errore }}</p>
-                </div>
-            {% else %}
-                <div class="classe-content">
-                    {% if risultato.risultato %}
-                        {% if risultato.risultato is mapping %}
-                            {% if risultato.risultato.get('studenti') %}
-                                {% set studenti = risultato.risultato.studenti %}
-                                <div class="studenti-count">
-                                    <span class="count-number">{{ studenti|length }}</span>
-                                    <span class="count-label">studenti</span>
-                                </div>
-                                {% if studenti|length > 0 %}
-                                    <div class="studenti-list">
-                                        {% for studente in studenti[:5] %}
-                                            <div class="studente-item">
-                                                {% if studente is mapping %}
-                                                    {{ studente.get('nome', studente.get('cognome', 'N/A')) }}
-                                                {% else %}
-                                                    {{ studente }}
-                                                {% endif %}
-                                            </div>
-                                        {% endfor %}
-                                        {% if studenti|length > 5 %}
-                                            <div class="studente-item more">+{{ studenti|length - 5 }} altri</div>
-                                        {% endif %}
-                                    </div>
-                                {% endif %}
-                            {% elif risultato.risultato.get('classe') or risultato.risultato.get('aula') %}
-                                <p class="info-message">Dati aula disponibili</p>
-                                <div class="aula-info">
-                                    <div class="info-item">
-                                        <strong>AULA:</strong> {{ risultato.aula }}
-                                    </div>
-                                </div>
+                {% for risultato in risultati %}
+                <a href="{{ url_for('elencoStudenti', classe=risultato.classe, aula=risultato.aula) }}" class="classe-card-link">
+                    <div class="classe-card {% if risultato.errore %}error-card{% else %}success-card{% endif %}">
+                        <div class="classe-header">
+                            <h3 class="classe-nome">Classe {{ risultato.classe }}</h3>
+                        </div>
+                        
+                        <div class="classe-content">
+                            {% if risultato.errore %}
+                                <p class="error-message">⚠️ {{ risultato.errore }}</p>
                             {% else %}
-                                <p class="empty-message">Nessuno studente presente</p>
+                                {% if risultato.risultato %}
+                                    {% if risultato.risultato is mapping %}
+                                        {% if risultato.risultato.get('studenti') %}
+                                            {% set studenti = risultato.risultato.studenti %}
+                                            <div class="studenti-count">
+                                                <span class="count-number">{{ studenti|length }}</span>
+                                                <span class="count-label">Studenti presenti</span>
+                                            </div>
+                                            {% if studenti|length > 0 %}
+                                                <div class="studenti-list">
+                                                    {% for studente in studenti[:5] %}
+                                                        <div class="studente-item">
+                                                            {% if studente is mapping %}
+                                                                {{ studente.get('nome', studente.get('cognome', 'N/A')) }}
+                                                            {% else %}
+                                                                {{ studente }}
+                                                            {% endif %}
+                                                        </div>
+                                                    {% endfor %}
+                                                    {% if studenti|length > 5 %}
+                                                        <div class="studente-item more">+{{ studenti|length - 5 }} altri</div>
+                                                    {% endif %}
+                                                </div>
+                                            {% endif %}
+                                        {% elif risultato.risultato.get('classe') or risultato.risultato.get('aula') %}
+                                            <p class="info-message">Dati aula registrati</p>
+                                            <div class="aula-info">
+                                                <div class="info-item">
+                                                    <strong>AULA:</strong> {{ risultato.aula }}
+                                                </div>
+                                            </div>
+                                        {% else %}
+                                            <p class="empty-message">Nessuno studente in aula</p>
+                                        {% endif %}
+                                    {% elif risultato.risultato is iterable and risultato.risultato is not string %}
+                                        <div class="studenti-count">
+                                            <span class="count-number">{{ risultato.risultato|length }}</span>
+                                            <span class="count-label">Elementi</span>
+                                        </div>
+                                        <pre class="data-preview">{{ risultato.risultato|tojson(indent=2) }}</pre>
+                                    {% else %}
+                                        <pre class="data-preview">{{ risultato.risultato|tojson(indent=2) }}</pre>
+                                    {% endif %}
+                                {% else %}
+                                    <p class="empty-message">Nessun dato disponibile</p>
+                                {% endif %}
                             {% endif %}
-                        {% elif risultato.risultato is iterable and risultato.risultato is not string %}
-                            <div class="studenti-count">
-                                <span class="count-number">{{ risultato.risultato|length }}</span>
-                                <span class="count-label">elementi</span>
-                            </div>
-                            <pre class="data-preview">{{ risultato.risultato|tojson(indent=2) }}</pre>
-                        {% else %}
-                            <pre class="data-preview">{{ risultato.risultato|tojson(indent=2) }}</pre>
-                        {% endif %}
-                    {% else %}
-                        <p class="empty-message">Nessun dato disponibile</p>
-                    {% endif %}
-                </div>
-            {% endif %}
+                        </div>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
         </div>
-        </a>
-        {% endfor %}
     </div>
 </div>
 
 <style>
+.emergenza-page {
+    background: #f8fafc;
+}
+
 .emergenza-section {
-    background: #f5f6f0;
-    min-height: 100vh;
+    width: 100%;
 }
 
 .page-header {
     background: #ffffff;
-    border-bottom: 1px solid #e8e9e3;
-    padding: 24px 40px;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 1.5rem 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
 }
 
 .btn-back {
-    display: inline-block;
-    margin-bottom: 1rem;
-    padding: 0.6rem 1.2rem;
-    background: #242935;
-    color: #e2f75c;
-    text-decoration: none;
-    border-radius: 6px;
-    font-weight: 600;
-    font-size: 0.9rem;
-    transition: all 0.15s ease;
-    border: none;
-    cursor: pointer;
-    min-height: 40px;
     display: inline-flex;
     align-items: center;
+    padding: 0.5rem 1rem;
+    background: #2d3748;
+    color: #e2f75c;
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    transition: all 0.2s ease;
 }
 
 .btn-back:hover {
-    background: #1a1f28;
-    transform: translateX(-2px);
+    background: #1a202c;
+    transform: translateX(-3px);
 }
 
-.page-header h2 {
-    margin: 12px 0 0;
-    font-size: 24px;
-    font-weight: 700;
-    color: #242935;
-}
-
-.info-bar {
-    display: flex;
-    gap: 24px;
-    margin-top: 12px;
-    font-size: 13px;
-    color: #8a8f7a;
-}
-
-.info-item strong {
-    color: #242935;
-    font-weight: 600;
+.page-header .section-title {
+    margin: 0;
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: #2d3748;
+    letter-spacing: -0.5px;
 }
 
 .content {
-    padding: 32px 40px 40px;
+    padding: 2rem;
 }
 
-.section-label {
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    color: #8a8f7a;
-    margin-bottom: 16px;
-}
-
-/* ===== EMERGENZA CONTROLS ===== */
+/* Pannello di controllo Ufficio Tecnico */
 .emergenza-controls {
     display: flex;
     flex-direction: column;
     align-items: center;
-    margin-bottom: 32px;
-    padding: 24px;
-    background: #ffffff;
-    border: 1px solid #e8e9e3;
-    border-radius: 10px;
-    gap: 12px;
+    margin-bottom: 2rem;
+    padding: 2rem;
+    background: #2d3748; /* Convertito nel blu-grigio di base per dare importanza */
+    color: white;
+    border-radius: 16px;
+    box-shadow: 0 10px 25px rgba(45, 55, 72, 0.15);
+    gap: 1rem;
 }
 
 .btn-emergenza {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
-    padding: 14px 32px;
-    font-size: 14px;
+    gap: 0.75rem;
+    padding: 1rem 2.5rem;
+    font-size: 1rem;
     font-weight: 700;
     border: none;
-    border-radius: 6px;
+    border-radius: 10px;
     cursor: pointer;
-    transition: all 0.15s ease;
-    text-transform: uppercase;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     letter-spacing: 0.5px;
-    min-width: 220px;
+    width: 100%;
+    max-width: 300px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
+/* Pulsante Avvia -> Colore Brand */
 .btn-emergenza.avvia {
-    background: #242935;
-    color: #e2f75c;
+    background: #e2f75c;
+    color: #2d3748;
 }
 
 .btn-emergenza.avvia:hover {
-    background: #1a1f28;
-    box-shadow: 0 2px 8px rgba(226, 247, 92, 0.15);
+    background: #d4ee3a;
+    transform: scale(1.02);
 }
 
+/* Pulsante Termina -> Colore di sicurezza/alert */
 .btn-emergenza.termina {
-    background: #c62828;
+    background: #e53e3e;
     color: white;
 }
 
 .btn-emergenza.termina:hover {
-    background: #b71c1c;
-    box-shadow: 0 2px 8px rgba(198, 40, 40, 0.2);
+    background: #c53030;
+    transform: scale(1.02);
 }
 
 .status-label {
     margin: 0;
-    font-size: 13px;
+    font-size: 0.95rem;
     font-weight: 600;
-    text-align: center;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
 }
 
 .status-label.attiva {
-    color: #2e7d32;
+    color: #68d391;
 }
 
-.status-label.inattiva {
-    color: #c62828;
-}
-
-/* ===== ERROR BANNER ===== */
+/* Banner di Stato inattivo */
 .error-banner {
     display: flex;
     align-items: center;
-    gap: 1.5rem;
-    margin-bottom: 24px;
-    padding: 1.5rem;
-    background: #fff3e0;
-    border: 1px solid #ffe0b2;
-    border-left: 4px solid #ff9800;
-    border-radius: 8px;
+    gap: 1.25rem;
+    margin-bottom: 2rem;
+    padding: 1.25rem;
+    background: #edf2f7;
+    border: 1px solid #e2e8f0;
+    border-left: 4px solid #4a5568;
+    border-radius: 12px;
 }
 
 .error-banner .error-icon {
-    font-size: 1.8rem;
-    min-width: 40px;
-    text-align: center;
+    color: #4a5568;
+    display: flex;
+    align-items: center;
 }
 
 .error-banner .error-message h3 {
-    margin: 0 0 0.5rem 0;
-    color: #e65100;
-    font-size: 1rem;
-    font-weight: 600;
+    margin: 0 0 0.25rem 0;
+    color: #2d3748;
+    font-size: 1.05rem;
+    font-weight: 700;
 }
 
 .error-banner .error-message p {
     margin: 0;
-    color: #bf360c;
+    color: #718096;
     font-size: 0.9rem;
 }
 
-/* ===== STATS BAR ===== */
+/* Statistiche superiori */
 .stats-bar {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
-    margin-bottom: 24px;
+    gap: 1rem;
+    margin-bottom: 2rem;
 }
 
 .stat-card {
     background: #ffffff;
-    border: 1px solid #e8e9e3;
-    border-radius: 10px;
-    padding: 20px;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 1.25rem;
     text-align: center;
-    transition: border-color 0.15s, box-shadow 0.15s;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .stat-card:hover {
-    border-color: #c5db3a;
-    box-shadow: 0 2px 12px rgba(226, 247, 92, 0.18);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px rgba(45, 55, 72, 0.08);
 }
 
 .stat-number {
-    font-size: 32px;
+    font-size: 2.25rem;
     font-weight: 700;
-    color: #242935;
-    margin-bottom: 8px;
+    color: #2d3748;
+    line-height: 1;
+    margin-bottom: 0.5rem;
 }
 
 .stat-label {
-    font-size: 12px;
-    font-weight: 600;
-    color: #8a8f7a;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #718096;
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
 
-.stat-card.success .stat-number {
-    color: #2e7d32;
+.stat-card.success {
+    border-top: 3px solid #48bb78;
 }
+.stat-card.success .stat-number { color: #38a169; }
 
-.stat-card.error .stat-number {
-    color: #c62828;
+.stat-card.error {
+    border-top: 3px solid #f56565;
 }
+.stat-card.error .stat-number { color: #e53e3e; }
 
-/* ===== CLASSI GRID ===== */
+
+/* Griglia Classi ed Elementi interni */
 .classi-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 12px;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.25rem;
 }
 
 .classe-card-link {
     text-decoration: none;
+    color: inherit;
 }
 
 .classe-card {
     background: #ffffff;
-    border: 1px solid #e8e9e3;
-    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
     overflow: hidden;
-    transition: border-color 0.15s, box-shadow 0.15s;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02);
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s ease;
 }
 
 .classe-card:hover {
-    border-color: #c5db3a;
-    box-shadow: 0 2px 12px rgba(226, 247, 92, 0.18);
+    transform: translateY(-4px);
+    box-shadow: 0 12px 20px rgba(45, 55, 72, 0.1);
+    border-color: #cbd5e0;
 }
 
-.classe-card.success-card {
-    border-color: #e8e9e3;
-}
-
-.classe-card.error-card {
-    border-color: #ffcdd2;
-    background: #ffebee;
-}
-
+/* Header della card scuro, titolo neon */
 .classe-header {
-    background: #242935;
-    border-bottom: 1px solid #e8e9e3;
-    padding: 12px 16px;
+    background: #2d3748;
+    padding: 0.85rem 1.25rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .classe-nome {
     margin: 0;
-    font-size: 14px;
-    font-weight: 600;
+    font-size: 1.1rem;
+    font-weight: 700;
     color: #e2f75c;
 }
 
 .classe-content {
-    padding: 16px;
-    font-size: 13px;
-    color: #5c6250;
+    padding: 1.25rem;
+    font-size: 0.9rem;
+    color: #4a5568;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
 }
 
-.error-message {
-    color: #c62828;
+/* Card in stato di Errore critico */
+.classe-card.error-card {
+    border-color: rgba(245, 101, 101, 0.4);
+}
+.classe-card.error-card .classe-header {
+    background: #742a2a; /* Variante rossa scura coordinata per gli errori */
+}
+.classe-card.error-card .error-message {
+    color: #c53030;
     font-weight: 600;
-    margin: 0;
-}
-
-.info-message {
-    color: #242935;
-    margin: 0 0 8px;
-}
-
-.empty-message {
-    color: #8a8f7a;
-    margin: 0;
+    margin: auto 0;
 }
 
 .studenti-count {
     display: flex;
     align-items: baseline;
-    gap: 8px;
-    margin-bottom: 12px;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
 }
 
 .count-number {
-    font-size: 24px;
+    font-size: 1.75rem;
     font-weight: 700;
-    color: #242935;
+    color: #2d3748;
+    line-height: 1;
 }
 
 .count-label {
-    font-size: 12px;
-    color: #8a8f7a;
+    font-size: 0.8rem;
+    color: #718096;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    font-weight: 600;
 }
 
+/* Liste studenti dentro la card */
 .studenti-list {
-    background: #f5f6f0;
-    border-radius: 6px;
-    padding: 8px;
+    background: #f7fafc;
+    border-radius: 8px;
+    padding: 0.5rem;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 0.25rem;
+    border: 1px solid #edf2f7;
+    margin-top: auto;
 }
 
 .studente-item {
-    padding: 6px 8px;
-    font-size: 12px;
-    color: #5c6250;
+    padding: 0.4rem 0.6rem;
+    font-size: 0.8rem;
+    color: #4a5568;
     background: #ffffff;
-    border-radius: 4px;
+    border-radius: 6px;
+    border-left: 3px solid #cbd5e0;
 }
 
 .studente-item.more {
-    font-weight: 600;
-    color: #242935;
-    background: #f5f6f0;
-    border: 1px dashed #e8e9e3;
+    font-weight: 700;
+    color: #2d3748;
+    background: transparent;
+    border: 1px dashed #cbd5e0;
+    text-align: center;
 }
 
 .aula-info {
-    background: #f5f6f0;
-    border-radius: 6px;
-    padding: 8px;
+    background: #f7fafc;
+    border-radius: 8px;
+    padding: 0.75rem;
+    border: 1px solid #edf2f7;
 }
 
-.aula-info .info-item {
-    font-size: 12px;
-    color: #5c6250;
-}
-
-.aula-info .info-item strong {
-    color: #5c6250;
-    font-weight: 600;
+.empty-message {
+    color: #a0aec0;
+    font-style: italic;
+    margin: auto 0;
 }
 
 .data-preview {
-    background: #f5f6f0;
-    border-radius: 6px;
-    padding: 8px;
-    font-size: 11px;
-    overflow-x: auto;
-    margin: 0;
+    background: #2d3748;
+    color: #a0aec0;
+    border-radius: 8px;
+    padding: 0.75rem;
+    font-size: 0.75rem;
+    font-family: monospace;
 }
 
-@media (max-width: 1100px) {
-    .stats-bar {
-        grid-template-columns: repeat(2, 1fr);
-    }
-    .classi-grid {
-        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-    }
+/* Modifiche layout responsive */
+@media (max-width: 900px) {
+    .page-header { padding: 1.25rem 1.5rem; }
+    .content { padding: 1.5rem; }
+    .stats-bar { grid-template-columns: repeat(2, 1fr); }
 }
 
-@media (max-width: 700px) {
-    .content {
-        padding: 24px 20px 32px;
-    }
-    .page-header {
-        padding: 20px;
-    }
-    .stats-bar {
-        grid-template-columns: 1fr;
-    }
-    .classi-grid {
-        grid-template-columns: 1fr;
-    }
-    .info-bar {
-        flex-direction: column;
-        gap: 8px;
-    }
+@media (max-width: 600px) {
+    .stats-bar { grid-template-columns: 1fr; }
+    .classi-grid { grid-template-columns: 1fr; }
+    .emergenza-controls { padding: 1.5rem 1rem; }
 }
-</style>
 </style>
 
 <script>
