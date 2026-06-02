@@ -4,153 +4,225 @@
 
 {% block content %}
 <div class="page-container">
-    <div class="content-section">
-        <h2>PIANTINA</h2>
-        <p>Consulta le planimetrie dell'istituto per edificio e piano.</p>
+    <div class="piantina-section">
 
-        <div class="map-tabs" role="tablist" aria-label="Selezione planimetria">
-            <button class="map-tab is-active" type="button" data-key="integrale">PIANTINA INTEGRALE</button>
-            <button class="map-tab" type="button" data-key="centrale">SEDE CENTRALE</button>
-            <button class="map-tab" type="button" data-key="elettronica">PALAZZINA ELETTRONICA</button>
-            <button class="map-tab" type="button" data-key="meccanica">PALAZZINA MECCANICA</button>
-            <button class="map-tab" type="button" data-key="tessile">PALAZZINA TESSILE</button>
-            <button class="map-tab" type="button" data-key="informatica">PALAZZINA INFORMATICA</button>
+        <div class="piantina-header">
+            <p>Consulta le planimetrie dell'istituto per edificio e piano.</p>
         </div>
 
-        <div class="map-gallery" id="mapGallery" aria-live="polite"></div>
+        <div class="content">
+            <p class="section-label">Seleziona edificio</p>
+
+            <div class="map-tabs" role="tablist" aria-label="Selezione planimetria">
+                <button class="map-tab is-active" type="button" data-key="integrale">Piantina integrale</button>
+                <button class="map-tab" type="button" data-key="centrale">Sede centrale</button>
+                <button class="map-tab" type="button" data-key="elettronica">Palazzina elettronica</button>
+                <button class="map-tab" type="button" data-key="meccanica">Palazzina meccanica</button>
+                <button class="map-tab" type="button" data-key="tessile">Palazzina tessile</button>
+                <button class="map-tab" type="button" data-key="informatica">Palazzina informatica</button>
+            </div>
+
+            <div class="map-gallery" id="mapGallery" aria-live="polite"></div>
+        </div>
+
     </div>
 </div>
 
 <style>
+.piantina-section {
+    background: #f5f6f0;
+    min-height: 100vh;
+}
+
+.piantina-header {
+    background: #ffffff;
+    border-bottom: 1px solid #e8e9e3;
+    padding: 48px 40px;
+    text-align: center;
+}
+
+.piantina-header-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 4px;
+}
+
+.logo-text {
+    font-size: 17px;
+    font-weight: 600;
+    color: #242935;
+}
+
+.piantina-header p {
+    font-size: 20px;
+    font-weight: 500;
+    color: #242935;
+    margin: 0;
+    line-height: 1.4;
+}
+
+.content {
+    padding: 32px 40px 40px;
+}
+
+.section-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #8a8f7a;
+    margin-bottom: 16px;
+}
+
+.map-tabs {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 8px;
+    margin-bottom: 24px;
+}
+
+.map-tab {
+    background: #ffffff;
+    border: 1px solid #e8e9e3;
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #5c6250;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s, color 0.15s;
+    text-align: center;
+}
+
+.map-tab:hover {
+    border-color: #c5db3a;
+    color: #242935;
+}
+
+.map-tab:focus-visible {
+    outline: 2px solid #e2f75c;
+    outline-offset: 2px;
+}
+
+.map-tab.is-active {
+    background: #242935;
+    color: #e2f75c;
+    border-color: #242935;
+}
+
+.map-gallery {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.map-card {
+    flex: 1 1 460px;
+    max-width: 540px;
+    background: #ffffff;
+    border: 1px solid #e8e9e3;
+    border-radius: 10px;
+    overflow: hidden;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.map-card:hover {
+    border-color: #c5db3a;
+    box-shadow: 0 2px 12px rgba(226, 247, 92, 0.18);
+}
+
+.map-card-title {
+    margin: 0;
+    padding: 12px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #e2f75c;
+    border-bottom: 1px solid #e8e9e3;
+    background: #f5f6f0;
+}
+
+.map-image-wrap {
+    height: 360px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #ffffff;
+}
+
+.map-image {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: contain;
+}
+
+.map-card-actions {
+    display: flex;
+    gap: 8px;
+    padding: 12px 16px;
+    border-top: 1px solid #e8e9e3;
+    background: #f5f6f0;
+    flex-wrap: wrap;
+}
+
+.map-link {
+    display: inline-block;
+    padding: 8px 16px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 600;
+    background: #242935;
+    color: #e2f75c;
+    transition: background 0.15s;
+}
+
+.map-link:hover {
+    background: #1a1f28;
+}
+
+.map-link-secondary {
+    background: #ffffff;
+    color: #e2f75c;
+    border: 1px solid #e8e9e3;
+}
+
+.map-link-secondary:hover {
+    background: #f5f6f0;
+    border-color: #c5db3a;
+}
+
+@media (max-width: 1100px) {
     .map-tabs {
-        display: grid;
         grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 0.6rem;
-        margin-top: 1rem;
-        max-width: 1040px;
-        margin-left: auto;
-        margin-right: auto;
     }
+}
 
-    .map-tab {
-        border: 1px solid #cbd5e0;
-        background: #ffffff;
-        color: #1a202c;
-        border-radius: 8px;
-        padding: 0.65rem 0.8rem;
-        font-size: 0.9rem;
-        font-weight: 700;
-        cursor: pointer;
-        transition: all 0.2s ease;
+@media (max-width: 700px) {
+    .map-tabs {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
-
-    .map-tab:hover,
-    .map-tab:focus-visible {
-        border-color: #2d3748;
-        outline: none;
+    .content {
+        padding: 24px 20px 32px;
     }
-
-    .map-tab.is-active {
-        background: #2d3748;
-        color: #ffffff;
-        border-color: #2d3748;
+    .piantina-header {
+        padding: 20px;
     }
-
-    .map-gallery {
-        margin-top: 1rem;
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: center;
-        gap: 1rem;
-    }
-
     .map-card {
-        flex: 1 1 460px;
-        max-width: 520px;
-        border: 1px solid #d9d9d9;
-        border-radius: 10px;
-        background: #f7f7f7;
-        overflow: hidden;
+        flex-basis: 100%;
+        max-width: 100%;
     }
-
-    .map-card-title {
-        margin: 0;
-        padding: 0.7rem 0.9rem;
-        font-size: 0.98rem;
-        font-weight: 700;
-        color: #1a202c;
-        border-bottom: 1px solid #e2e8f0;
-        background: #edf2f7;
-    }
-
     .map-image-wrap {
-        height: 360px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: #ffffff;
+        height: 260px;
     }
+}
 
-    .map-card-actions {
-        display: flex;
-        justify-content: center;
-        gap: 0.6rem;
-        padding: 0.75rem;
-        border-top: 1px solid #e2e8f0;
-        background: #f8fafc;
-        flex-wrap: wrap;
+@media (max-width: 480px) {
+    .map-tabs {
+        grid-template-columns: 1fr;
     }
-
-    .map-image {
-        width: 100%;
-        height: 100%;
-        display: block;
-        object-fit: contain;
-    }
-
-    .map-link {
-        display: inline-block;
-        padding: 0.6rem 1rem;
-        border-radius: 8px;
-        text-decoration: none;
-        font-weight: 600;
-        background: #2d3748;
-        color: #ffffff;
-    }
-
-    .map-link-secondary {
-        background: #edf2f7;
-        color: #2d3748;
-    }
-
-    @media (max-width: 920px) {
-        .map-tabs {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
-
-        .map-card {
-            flex-basis: 380px;
-        }
-    }
-
-    @media (max-width: 640px) {
-        .map-tabs {
-            grid-template-columns: 1fr;
-        }
-
-        .map-gallery {
-            gap: 0.8rem;
-        }
-
-        .map-image-wrap {
-            height: 280px;
-        }
-
-        .map-card {
-            flex-basis: 100%;
-            max-width: 100%;
-        }
-    }
+}
 </style>
 
 <script>
@@ -217,15 +289,13 @@
 
     function renderSection(sectionKey) {
         const selected = plansBySection[sectionKey];
-        if (!selected) {
-            return;
-        }
+        if (!selected) return;
 
         gallery.innerHTML = selected.images.map((img) => {
             const src = `${baseImagePath}/${img.file}`;
             return `
                 <article class="map-card">
-                    <h3 class="map-card-title">${selected.sectionTitle} - ${img.title}</h3>
+                    <h3 class="map-card-title">${selected.sectionTitle} — ${img.title}</h3>
                     <div class="map-image-wrap">
                         <img class="map-image" src="${src}" alt="${selected.sectionTitle} ${img.title}">
                     </div>
@@ -243,12 +313,9 @@
     }
 
     tabs.forEach((tab) => {
-        tab.addEventListener("click", () => {
-            renderSection(tab.dataset.key);
-        });
+        tab.addEventListener("click", () => renderSection(tab.dataset.key));
     });
 
     renderSection("integrale");
 </script>
 {% endblock %}
-

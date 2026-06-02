@@ -4,9 +4,10 @@
 
 {% block content %}
 <div class="page-container">
-    <div class="page-header-with-btn">
-        <a href="{{ url_for('dashboard') }}" class="btn-back-dashboard">← Dashboard</a>
+    <div class="emergenza-section">
+
         <div class="page-header">
+            <a href="{{ url_for('dashboard') }}" class="btn-back">← Indietro</a>
             <h2>EMERGENZE</h2>
             <div class="info-bar">
                 <span class="info-item">
@@ -17,54 +18,53 @@
                 </span>
             </div>
         </div>
-    </div>
 
-    <!-- PULSANTE AVVIA/TERMINA EMERGENZA - Solo Ufficio Tecnico -->
-    {% if is_ufficio_tecnico %}
-    <div class="emergenza-controls">
-        {% if emergenza_attiva %}
-        <button id="btn-termina-emergenza" class="btn-emergenza termina" data-action="termina">
-            <span class="icon">⏹️</span>
-            TERMINA EMERGENZA
-        </button>
-        <p class="status-label attiva">🟢 Emergenza in corso</p>
-        {% else %}
-        <button id="btn-avvia-emergenza" class="btn-emergenza avvia" data-action="avvia">
-            <span class="icon">▶️</span>
-            AVVIA EMERGENZA
-        </button>
-        <p class="status-label inattiva">🔴 Nessuna emergenza</p>
-        {% endif %}
-    </div>
-    {% endif %}
+        <div class="content">
+            <!-- PULSANTE AVVIA/TERMINA EMERGENZA - Solo Ufficio Tecnico -->
+            {% if is_ufficio_tecnico %}
+            <div class="emergenza-controls">
+                {% if emergenza_attiva %}
+                <button id="btn-termina-emergenza" class="btn-emergenza termina" data-action="termina">
+                    ⏹️ TERMINA EMERGENZA
+                </button>
+                <p class="status-label attiva">🟢 Emergenza in corso</p>
+                {% else %}
+                <button id="btn-avvia-emergenza" class="btn-emergenza avvia" data-action="avvia">
+                    ▶️ AVVIA EMERGENZA
+                </button>
+                <p class="status-label inattiva">🔴 Nessuna emergenza</p>
+                {% endif %}
+            </div>
+            {% endif %}
 
-    <!-- MESSAGGIO DI ERRORE - Emergenza non attiva -->
-    {% if not emergenza_attiva and not is_ufficio_tecnico %}
-    <div class="error-banner">
-        <div class="error-icon">⚠️</div>
-        <div class="error-message">
-            <h3>Nessuna emergenza in corso</h3>
-            <p>Contatta l'ufficio tecnico per avviare un'emergenza prima di compilare la rotta.</p>
-        </div>
-    </div>
-    {% endif %}
+            <!-- MESSAGGIO DI ERRORE - Emergenza non attiva -->
+            {% if not emergenza_attiva and not is_ufficio_tecnico %}
+            <div class="error-banner">
+                <div class="error-icon">⚠️</div>
+                <div class="error-message">
+                    <h3>Nessuna emergenza in corso</h3>
+                    <p>Contatta l'ufficio tecnico per avviare un'emergenza prima di compilare la rotta.</p>
+                </div>
+            </div>
+            {% endif %}
 
-    <div class="stats-bar">
-        <div class="stat-card">
-            <div class="stat-number">{{ total_aule }}</div>
-            <div class="stat-label">Totale Aule</div>
-        </div>
-        <div class="stat-card success">
-            <div class="stat-number">{{ num_with_class }}</div>
-            <div class="stat-label">Aule piene</div>
-        </div>
-        <div class="stat-card error">
-            <div class="stat-number">{{ total_aule - num_with_class }}</div>
-            <div class="stat-label">Aule vuote</div>
-        </div>
-    </div>
+            <div class="stats-bar">
+                <div class="stat-card">
+                    <div class="stat-number">{{ total_aule }}</div>
+                    <div class="stat-label">Totale Aule</div>
+                </div>
+                <div class="stat-card success">
+                    <div class="stat-number">{{ num_with_class }}</div>
+                    <div class="stat-label">Aule piene</div>
+                </div>
+                <div class="stat-card error">
+                    <div class="stat-number">{{ total_aule - num_with_class }}</div>
+                    <div class="stat-label">Aule vuote</div>
+                </div>
+            </div>
 
-    <div class="classi-grid">
+
+            <div class="classi-grid">
         {% for risultato in risultati %}
         <a href="{{ url_for('elencoStudenti', classe=risultato.classe, aula=risultato.aula) }}" class="classe-card-link">
         <div class="classe-card {% if risultato.errore %}error-card{% else %}success-card{% endif %}">
@@ -133,22 +133,28 @@
 </div>
 
 <style>
-.page-header-with-btn {
-    position: relative;
-    margin-bottom: 1.5rem;
+.emergenza-section {
+    background: #f5f6f0;
+    min-height: 100vh;
 }
 
-.btn-back-dashboard {
+.page-header {
+    background: #ffffff;
+    border-bottom: 1px solid #e8e9e3;
+    padding: 24px 40px;
+}
+
+.btn-back {
     display: inline-block;
     margin-bottom: 1rem;
     padding: 0.6rem 1.2rem;
-    background: #2d3748;
-    color: white;
+    background: #242935;
+    color: #e2f75c;
     text-decoration: none;
-    border-radius: 8px;
+    border-radius: 6px;
     font-weight: 600;
     font-size: 0.9rem;
-    transition: all 0.2s ease;
+    transition: all 0.15s ease;
     border: none;
     cursor: pointer;
     min-height: 40px;
@@ -156,13 +162,42 @@
     align-items: center;
 }
 
-.btn-back-dashboard:hover {
-    background: #1a202c;
+.btn-back:hover {
+    background: #1a1f28;
     transform: translateX(-2px);
 }
 
-.btn-back-dashboard:active {
-    transform: scale(0.98);
+.page-header h2 {
+    margin: 12px 0 0;
+    font-size: 24px;
+    font-weight: 700;
+    color: #242935;
+}
+
+.info-bar {
+    display: flex;
+    gap: 24px;
+    margin-top: 12px;
+    font-size: 13px;
+    color: #8a8f7a;
+}
+
+.info-item strong {
+    color: #242935;
+    font-weight: 600;
+}
+
+.content {
+    padding: 32px 40px 40px;
+}
+
+.section-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #8a8f7a;
+    margin-bottom: 16px;
 }
 
 /* ===== EMERGENZA CONTROLS ===== */
@@ -170,67 +205,54 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    margin: 2rem 0;
-    padding: 2rem;
-    background: linear-gradient(135deg, #f5f7fa 0%, #eef1f6 100%);
-    border-radius: 12px;
-    border: 2px solid #e0e6ed;
+    margin-bottom: 32px;
+    padding: 24px;
+    background: #ffffff;
+    border: 1px solid #e8e9e3;
+    border-radius: 10px;
+    gap: 12px;
 }
 
 .btn-emergenza {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 12px;
-    padding: 16px 48px;
-    font-size: 1.2rem;
+    gap: 10px;
+    padding: 14px 32px;
+    font-size: 14px;
     font-weight: 700;
     border: none;
-    border-radius: 8px;
+    border-radius: 6px;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.15s ease;
     text-transform: uppercase;
-    letter-spacing: 1px;
-    min-width: 300px;
-}
-
-.btn-emergenza .icon {
-    font-size: 1.4rem;
+    letter-spacing: 0.5px;
+    min-width: 220px;
 }
 
 .btn-emergenza.avvia {
-    background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
-    color: white;
-    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+    background: #242935;
+    color: #e2f75c;
 }
 
 .btn-emergenza.avvia:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
-}
-
-.btn-emergenza.avvia:active {
-    transform: scale(0.98);
+    background: #1a1f28;
+    box-shadow: 0 2px 8px rgba(226, 247, 92, 0.15);
 }
 
 .btn-emergenza.termina {
-    background: linear-gradient(135deg, #f44336 0%, #da190b 100%);
+    background: #c62828;
     color: white;
-    box-shadow: 0 4px 12px rgba(244, 67, 54, 0.3);
 }
 
 .btn-emergenza.termina:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(244, 67, 54, 0.4);
-}
-
-.btn-emergenza.termina:active {
-    transform: scale(0.98);
+    background: #b71c1c;
+    box-shadow: 0 2px 8px rgba(198, 40, 40, 0.2);
 }
 
 .status-label {
-    margin-top: 12px;
-    font-size: 1rem;
+    margin: 0;
+    font-size: 13px;
     font-weight: 600;
     text-align: center;
 }
@@ -243,20 +265,21 @@
     color: #c62828;
 }
 
-/* ===== ERROR BANNER - Emergenza non attiva ===== */
+/* ===== ERROR BANNER ===== */
 .error-banner {
     display: flex;
     align-items: center;
     gap: 1.5rem;
-    margin: 2rem 0;
+    margin-bottom: 24px;
     padding: 1.5rem;
-    background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+    background: #fff3e0;
+    border: 1px solid #ffe0b2;
     border-left: 4px solid #ff9800;
     border-radius: 8px;
 }
 
 .error-banner .error-icon {
-    font-size: 2rem;
+    font-size: 1.8rem;
     min-width: 40px;
     text-align: center;
 }
@@ -264,14 +287,226 @@
 .error-banner .error-message h3 {
     margin: 0 0 0.5rem 0;
     color: #e65100;
-    font-size: 1.1rem;
+    font-size: 1rem;
+    font-weight: 600;
 }
 
 .error-banner .error-message p {
     margin: 0;
     color: #bf360c;
-    font-size: 0.95rem;
+    font-size: 0.9rem;
 }
+
+/* ===== STATS BAR ===== */
+.stats-bar {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.stat-card {
+    background: #ffffff;
+    border: 1px solid #e8e9e3;
+    border-radius: 10px;
+    padding: 20px;
+    text-align: center;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.stat-card:hover {
+    border-color: #c5db3a;
+    box-shadow: 0 2px 12px rgba(226, 247, 92, 0.18);
+}
+
+.stat-number {
+    font-size: 32px;
+    font-weight: 700;
+    color: #242935;
+    margin-bottom: 8px;
+}
+
+.stat-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #8a8f7a;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.stat-card.success .stat-number {
+    color: #2e7d32;
+}
+
+.stat-card.error .stat-number {
+    color: #c62828;
+}
+
+/* ===== CLASSI GRID ===== */
+.classi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+}
+
+.classe-card-link {
+    text-decoration: none;
+}
+
+.classe-card {
+    background: #ffffff;
+    border: 1px solid #e8e9e3;
+    border-radius: 10px;
+    overflow: hidden;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.classe-card:hover {
+    border-color: #c5db3a;
+    box-shadow: 0 2px 12px rgba(226, 247, 92, 0.18);
+}
+
+.classe-card.success-card {
+    border-color: #e8e9e3;
+}
+
+.classe-card.error-card {
+    border-color: #ffcdd2;
+    background: #ffebee;
+}
+
+.classe-header {
+    background: #242935;
+    border-bottom: 1px solid #e8e9e3;
+    padding: 12px 16px;
+}
+
+.classe-nome {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: #e2f75c;
+}
+
+.classe-content {
+    padding: 16px;
+    font-size: 13px;
+    color: #5c6250;
+}
+
+.error-message {
+    color: #c62828;
+    font-weight: 600;
+    margin: 0;
+}
+
+.info-message {
+    color: #242935;
+    margin: 0 0 8px;
+}
+
+.empty-message {
+    color: #8a8f7a;
+    margin: 0;
+}
+
+.studenti-count {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.count-number {
+    font-size: 24px;
+    font-weight: 700;
+    color: #242935;
+}
+
+.count-label {
+    font-size: 12px;
+    color: #8a8f7a;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.studenti-list {
+    background: #f5f6f0;
+    border-radius: 6px;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.studente-item {
+    padding: 6px 8px;
+    font-size: 12px;
+    color: #5c6250;
+    background: #ffffff;
+    border-radius: 4px;
+}
+
+.studente-item.more {
+    font-weight: 600;
+    color: #242935;
+    background: #f5f6f0;
+    border: 1px dashed #e8e9e3;
+}
+
+.aula-info {
+    background: #f5f6f0;
+    border-radius: 6px;
+    padding: 8px;
+}
+
+.aula-info .info-item {
+    font-size: 12px;
+    color: #5c6250;
+}
+
+.aula-info .info-item strong {
+    color: #5c6250;
+    font-weight: 600;
+}
+
+.data-preview {
+    background: #f5f6f0;
+    border-radius: 6px;
+    padding: 8px;
+    font-size: 11px;
+    overflow-x: auto;
+    margin: 0;
+}
+
+@media (max-width: 1100px) {
+    .stats-bar {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .classi-grid {
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    }
+}
+
+@media (max-width: 700px) {
+    .content {
+        padding: 24px 20px 32px;
+    }
+    .page-header {
+        padding: 20px;
+    }
+    .stats-bar {
+        grid-template-columns: 1fr;
+    }
+    .classi-grid {
+        grid-template-columns: 1fr;
+    }
+    .info-bar {
+        flex-direction: column;
+        gap: 8px;
+    }
+}
+</style>
 </style>
 
 <script>

@@ -763,9 +763,6 @@ def salva_presenze():
             "record": record
         }), 200
         
-        finally:
-            conn.close()
-        
     except Exception as e:
         return jsonify({"error": f"Errore durante il salvataggio: {str(e)}"}), 500
 

@@ -5,237 +5,294 @@
 {% block content %}
 <div class="page-container">
     <div class="dev-choice-section">
+
         <div class="dev-header">
-            <h2>MODALITÀ DEV - Scegli il Ruolo</h2>
-            <p>Seleziona quale ruolo usare per testare il login</p>
+            <div class="dev-header-left">
+                <span class="logo-text">Runout</span>
+                <span class="dev-badge">DEV MODE</span>
+            </div>
+            <p>Seleziona un ruolo per simulare il login</p>
         </div>
 
-        <div class="choice-cards">
-            {# ===== STUDENTE ===== #}
-            <div class="choice-card student-card">
-                <div class="card-icon">👨‍🎓</div>
-                <h3>Studente</h3>
-                <p class="role-description">Accesso come studente</p>
-                <a href="{{ url_for('sso_login', role='studente') }}" class="btn btn-choice btn-student">
-                    Accedi
-                </a>
+        <div class="content">
+            <p class="section-label">Ruoli disponibili</p>
+
+            <div class="choice-cards">
+
+                {# ===== STUDENTE ===== #}
+                <div class="choice-card">
+                    <div class="card-top">
+                        <div class="card-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+                        </div>
+                        <h3>Studente</h3>
+                    </div>
+                    <div class="routes-list">
+                        <div class="perm"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M8 7v10M3 12h18"/></svg> Piantina</div>
+                    </div>
+                    <a href="{{ url_for('sso_login', role='studente') }}" class="btn-choice">Accedi</a>
+                </div>
+
+                {# ===== DOCENTE ===== #}
+                <div class="choice-card">
+                    <div class="card-top">
+                        <div class="card-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v10"/><path d="M4 19h16"/><path d="M9 11h6M9 15h4"/></svg>
+                        </div>
+                        <h3>Docente</h3>
+                    </div>
+                    <div class="routes-list">
+                        <div class="perm"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M8 7v10M3 12h18"/></svg> Piantina</div>
+                        <div class="perm"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4m0 4h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg> Emergenze</div>
+                    </div>
+                    <a href="{{ url_for('sso_login', role='docente') }}" class="btn-choice">Accedi</a>
+                </div>
+
+                {# ===== RSPP ===== #}
+                <div class="choice-card">
+                    <div class="card-top">
+                        <div class="card-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                        </div>
+                        <h3>RSPP</h3>
+                    </div>
+                    <div class="routes-list">
+                        <div class="perm"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M8 7v10M3 12h18"/></svg> Piantina</div>
+                        <div class="perm"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4m0 4h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg> Emergenze</div>
+                        <div class="perm"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="2"/><path d="M9 12h6M9 16h4"/></svg> Registri compilati</div>
+                    </div>
+                    <a href="{{ url_for('sso_login', role='rspp') }}" class="btn-choice">Accedi</a>
+                </div>
+
+                {# ===== DIRIGENTE ===== #}
+                <div class="choice-card">
+                    <div class="card-top">
+                        <div class="card-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2M12 12v4M10 14h4"/></svg>
+                        </div>
+                        <h3>Dirigente</h3>
+                    </div>
+                    <div class="routes-list">
+                        <div class="perm"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M8 7v10M3 12h18"/></svg> Piantina</div>
+                        <div class="perm"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4m0 4h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg> Emergenze</div>
+                        <div class="perm"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="2"/><path d="M9 12h6M9 16h4"/></svg> Registri compilati</div>
+                    </div>
+                    <a href="{{ url_for('sso_login', role='dirigente') }}" class="btn-choice">Accedi</a>
+                </div>
+
+                {# ===== UFFICIO TECNICO ===== #}
+                <div class="choice-card">
+                    <div class="card-top">
+                        <div class="card-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+                        </div>
+                        <h3>Ufficio Tecnico</h3>
+                    </div>
+                    <div class="routes-list">
+                        <div class="perm"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M8 7v10M3 12h18"/></svg> Piantina</div>
+                        <div class="perm"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4m0 4h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg> Emergenze</div>
+                        <div class="perm"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="2"/><path d="M9 12h6M9 16h4"/></svg> Registri compilati</div>
+                    </div>
+                    <a href="{{ url_for('sso_login', role='ufficio_tecnico') }}" class="btn-choice">Accedi</a>
+                </div>
+
             </div>
 
-            {# ===== DOCENTE ===== #}
-            <div class="choice-card docente-card">
-                <div class="card-icon">👨‍🏫</div>
-                <h3>Docente</h3>
-                <p class="role-description">Accesso come insegnante</p>
-                <a href="{{ url_for('sso_login', role='docente') }}" class="btn btn-choice btn-docente">
-                    Accedi
-                </a>
-            </div>
-
-            {# ===== RSPP ===== #}
-            <div class="choice-card rspp-card">
-                <div class="card-icon">🛡️</div>
-                <h3>RSPP</h3>
-                <p class="role-description">Responsabile Sicurezza</p>
-                <a href="{{ url_for('sso_login', role='rspp') }}" class="btn btn-choice btn-rspp">
-                    Accedi
-                </a>
-            </div>
-
-            {# ===== DIRIGENTE ===== #}
-            <div class="choice-card dirigente-card">
-                <div class="card-icon">👔</div>
-                <h3>Dirigente</h3>
-                <p class="role-description">Accesso come dirigente</p>
-                <a href="{{ url_for('sso_login', role='dirigente') }}" class="btn btn-choice btn-dirigente">
-                    Accedi
-                </a>
-            </div>
-
-            {# ===== UFFICIO TECNICO ===== #}
-            <div class="choice-card ufficio-tecnico-card">
-                <div class="card-icon">🔧</div>
-                <h3>Ufficio Tecnico</h3>
-                <p class="role-description">Accesso come tecnico</p>
-                <a href="{{ url_for('sso_login', role='ufficio_tecnico') }}" class="btn btn-choice btn-ufficio-tecnico">
-                    Accedi
-                </a>
+            <div class="dev-info">
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+                <p><strong>Info dev mode —</strong> Il login è simulato senza JWT reali dal portale SSO. Ogni ruolo ha permessi e accessi differenti.</p>
             </div>
         </div>
 
-        <div class="dev-info">
-            <p>
-                <strong>💡 Info Dev Mode:</strong><br>
-                In modalità dev, il login è simulato senza richiedere JWT reali dal portale SSO.
-                Ogni ruolo ha permessi e accessi diversi.
-            </p>
-        </div>
     </div>
 </div>
 
 <style>
 .dev-choice-section {
-    padding: 20px;
+    background: #f5f6f0;
+    min-height: 100vh;
 }
 
 .dev-header {
-    background: rgb(36, 43, 59);
-    color: white;
-    padding: 32px;
-    border-radius: 16px;
-    margin-bottom: 32px;
-    text-align: center;
+    background: #ffffff;
+    border-bottom: 1px solid #e8e9e3;
+    padding: 24px 40px;
 }
 
-.dev-header h2 {
-    margin: 0 0 12px;
-    font-size: 24px;
+.dev-header-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 4px;
+}
+
+.logo-text {
+    font-size: 17px;
+    font-weight: 600;
+    color: #242935;
+}
+
+.dev-badge {
+    background: #e2f75c;
+    color: #242935;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 4px;
+    letter-spacing: 0.5px;
 }
 
 .dev-header p {
+    font-size: 13px;
+    color: #8a8f7a;
     margin: 0;
-    color: rgba(255,255,255,0.8);
+}
+
+.content {
+    padding: 32px 40px 40px;
+}
+
+.section-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #8a8f7a;
+    margin-bottom: 16px;
 }
 
 .choice-cards {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
-    gap: 24px;
-    margin-bottom: 32px;
+    gap: 12px;
+    margin-bottom: 24px;
 }
 
 .choice-card {
-    background: white;
-    border: 2px solid #eee;
-    border-radius: 12px;
-    padding: 28px;
-    text-align: center;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-    transition: all 0.3s ease;
+    background: #ffffff;
+    border: 1px solid #e8e9e3;
+    border-radius: 10px;
+    padding: 22px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    transition: border-color 0.15s, box-shadow 0.15s;
 }
 
 .choice-card:hover {
-    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
-    transform: translateY(-4px);
+    border-color: #c5db3a;
+    box-shadow: 0 2px 12px rgba(226, 247, 92, 0.18);
 }
 
+.card-top {}
+
 .card-icon {
-    font-size: 48px;
-    margin: 0 0 16px;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: #f5f6f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 12px;
+    color: #242935;
 }
 
 .choice-card h3 {
-    margin: 0 0 12px;
-    color: #333;
-    font-size: 18px;
+    font-size: 15px;
     font-weight: 600;
+    color: #242935;
+    margin: 0;
 }
 
-.role-description {
-    font-size: 13px;
-    color: #999;
-    margin: 8px 0 16px;
+.routes-list {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+
+.perm {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #5c6250;
+}
+
+.perm svg {
+    color: #a8b090;
+    flex-shrink: 0;
 }
 
 .btn-choice {
-    display: inline-block;
-    padding: 12px 28px;
-    border-radius: 8px;
-    text-decoration: none;
-    font-weight: 600;
-    margin-top: 16px;
-    transition: all 0.2s;
+    display: block;
+    background: #242935;
+    color: #e2f75c;
     border: none;
-    cursor: pointer;
-    color: white;
+    border-radius: 6px;
+    padding: 10px 0;
+    font-size: 13px;
+    font-weight: 600;
+    text-align: center;
+    text-decoration: none;
+    letter-spacing: 0.3px;
+    transition: background 0.15s;
 }
 
 .btn-choice:hover {
-    transform: scale(1.05);
-}
-
-.btn-student {
-    background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%);
-}
-
-.btn-student:hover {
-    background: linear-gradient(135deg, #357abd 0%, #2a5a9a 100%);
-}
-
-.btn-docente {
-    background: linear-gradient(135deg, #7cb342 0%, #558b2f 100%);
-}
-
-.btn-docente:hover {
-    background: linear-gradient(135deg, #558b2f 0%, #3d6b1f 100%);
-}
-
-.btn-rspp {
-    background: linear-gradient(135deg, #0097a7 0%, #00695c 100%);
-}
-
-.btn-rspp:hover {
-    background: linear-gradient(135deg, #00695c 0%, #004d40 100%);
-}
-
-.btn-dirigente {
-    background: linear-gradient(135deg, #ffa726 0%, #f57c00 100%);
-}
-
-.btn-dirigente:hover {
-    background: linear-gradient(135deg, #f57c00 0%, #e65100 100%);
-}
-
-.btn-ufficio-tecnico {
-    background: linear-gradient(135deg, #ab47bc 0%, #7b1fa2 100%);
-}
-
-.btn-ufficio-tecnico:hover {
-    background: linear-gradient(135deg, #7b1fa2 0%, #6a1b9a 100%);
+    background: #1a1f28;
 }
 
 .dev-info {
-    background: #fffbeb;
-    border-left: 4px solid #fbbf24;
-    padding: 16px;
-    border-radius: 8px;
-    margin-bottom: 24px;
+    background: #ffffff;
+    border: 1px solid #e8e9e3;
+    border-radius: 10px;
+    padding: 14px 18px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    color: #8a8f7a;
+}
+
+.dev-info svg {
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.dev-info p {
     font-size: 13px;
-    color: #78350f;
+    color: #5c6250;
+    line-height: 1.6;
+    margin: 0;
 }
 
 .dev-info strong {
-    display: block;
-    margin-bottom: 8px;
-    color: #92400e;
+    color: #242935;
+    font-weight: 600;
 }
 
-@media (max-width: 1400px) {
+@media (max-width: 1100px) {
     .choice-cards {
         grid-template-columns: repeat(3, 1fr);
     }
 }
 
-@media (max-width: 900px) {
+@media (max-width: 700px) {
     .choice-cards {
         grid-template-columns: repeat(2, 1fr);
     }
-}
-
-@media (max-width: 600px) {
-    .choice-cards {
-        grid-template-columns: 1fr;
+    .content {
+        padding: 24px 20px 32px;
     }
-
-    .dev-header h2 {
-        font-size: 20px;
-    }
-
-    .choice-card {
+    .dev-header {
         padding: 20px;
     }
+}
 
-    .card-icon {
-        font-size: 40px;
+@media (max-width: 480px) {
+    .choice-cards {
+        grid-template-columns: 1fr;
     }
 }
 </style>
