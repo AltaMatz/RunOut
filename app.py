@@ -24,6 +24,7 @@ from flask import (
 from config import (
     FLASK_SECRET_KEY, SESSION_LIFETIME_SECONDS,
     SSO_MODE, DEV_USER_EMAIL, DEV_DOCENTE_EMAIL,
+    DEV_RSPP_EMAIL, DEV_DIRIGENTE_EMAIL, DEV_UFFICIO_TECNICO_EMAIL,
     SSO_JWT_SECRET, SSO_JWT_ISSUER, SSO_JWT_AUDIENCE, SSO_PORTAL_URL,
     MAX_SESSIONS_PER_USER, MAX_SESSIONS_GLOBAL,
     WHITELIST_FILE, API_TOKEN, DEBUG, SSO_CONFIG
@@ -190,90 +191,60 @@ def _refresh_cache_in_background():
 
 
 # ============================================================
-# PROCESSO SYNC PRESENZE
+# GESTIONE EMERGENZE - STATO ATTIVO/INATTIVO
 # ============================================================
 
-_sync_process = None
+EMERGENZA_STATUS_FILE = 'emergenza_status.json'
 
-
-def _should_start_sync_process() -> bool:
-    """Evita il doppio avvio con il reloader di Flask in debug."""
-    if app.debug and os.environ.get("WERKZEUG_RUN_MAIN") != "true":
-        return False
-    return True
-
-
-def _start_sync_presenze_process():
-    """Avvia sync_presenze.py in background se non è già attivo."""
-    global _sync_process
-
-    if not _should_start_sync_process():
-        return
-
-    if _sync_process is not None and _sync_process.poll() is None:
-        return
-
-    script_path = os.path.join(os.path.dirname(__file__), "sync_presenze.py")
-    if not os.path.exists(script_path):
-        app.logger.warning("sync_presenze.py non trovato: impossibile avviare la sincronizzazione automatica")
-        return
-
+def _get_emergenza_status():
+    """Legge lo stato dell'emergenza dal file."""
     try:
-        creationflags = 0
-        if os.name == "nt":
-            creationflags = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
-
-        _sync_process = subprocess.Popen(
-            [sys.executable, script_path],
-            cwd=os.path.dirname(__file__),
-            creationflags=creationflags,
-        )
-        app.logger.info(f"sync_presenze.py avviato automaticamente (PID: {_sync_process.pid})")
+        if os.path.exists(EMERGENZA_STATUS_FILE):
+            with open(EMERGENZA_STATUS_FILE, 'r', encoding='utf-8') as f:
+                return json.load(f)
     except Exception as e:
-        app.logger.error(f"Errore avvio sync_presenze.py: {e}")
-        _sync_process = None
+        app.logger.error(f"Errore lettura stato emergenza: {e}")
+    
+    # Default se file non esiste o errore
+    return {"active": False, "started_at": None, "ended_at": None}
 
 
-def _stop_sync_presenze_process():
-    """Termina il processo sync_presenze.py se attivo."""
-    global _sync_process
-
-    if _sync_process is None:
-        return
-
-    if _sync_process.poll() is not None:
-        _sync_process = None
-        return
-
+def _set_emergenza_status(active: bool):
+    """Imposta lo stato dell'emergenza nel file."""
     try:
-        app.logger.info("Arresto automatico di sync_presenze.py...")
-        _sync_process.terminate()
-        _sync_process.wait(timeout=5)
-    except Exception:
-        try:
-            if os.name == "nt":
-                subprocess.run(
-                    ["taskkill", "/PID", str(_sync_process.pid), "/T", "/F"],
-                    check=False,
-                    capture_output=True,
-                )
-            else:
-                _sync_process.kill()
-        except Exception:
-            pass
-    finally:
-        _sync_process = None
-
-
-atexit.register(_stop_sync_presenze_process)
+        status = {
+            "active": active,
+            "started_at": datetime.now().isoformat() if active else None,
+            "ended_at": datetime.now().isoformat() if not active else None,
+        }
+        with open(EMERGENZA_STATUS_FILE, 'w', encoding='utf-8') as f:
+            json.dump(status, f, ensure_ascii=False, indent=2)
+        app.logger.info(f"Stato emergenza: {'ATTIVA' if active else 'TERMINATA'}")
+        return status
+    except Exception as e:
+        app.logger.error(f"Errore scrittura stato emergenza: {e}")
+        return _get_emergenza_status()
 
 
 # ============================================================
-# UTILITY E DECORATORS
+# UTILITY & DECORATORS
 # ============================================================
 
 def get_username(email: str) -> str:
     return email.split('@')[0]
+
+
+def get_dev_roles():
+    """
+    Ritorna i 5 ruoli disponibili in modalità DEV con le loro email.
+    """
+    return {
+        'studente': DEV_USER_EMAIL,
+        'docente': DEV_DOCENTE_EMAIL,
+        'rspp': DEV_RSPP_EMAIL,
+        'dirigente': DEV_DIRIGENTE_EMAIL,
+        'ufficio_tecnico': DEV_UFFICIO_TECNICO_EMAIL,
+    }
 
 
 def role_required(allowed_roles):
@@ -345,13 +316,13 @@ def role_required(allowed_roles):
 
 @app.route("/")
 def home():
-    """Home page - mostra scelta email in dev mode, oppure home normale."""
-    user = session.get("user", None)
+    """Home page - mostra scelta ruoli in dev mode, oppure home normale."""
+    user = session.get('user', None)
     
-    if SSO_MODE == "dev" and not user:
-        return render_template("dev_login_choice.html",
-                             student_email=DEV_USER_EMAIL,
-                             docente_email=DEV_DOCENTE_EMAIL)
+    # In dev mode, mostra direttamente la scelta di ruoli se non autenticato
+    if SSO_MODE == 'dev' and not user:
+        dev_roles = get_dev_roles()
+        return render_template("dev_login_choice.html", dev_roles=dev_roles)
     
     return render_template("home.html", user=user, sso_mode=SSO_MODE)
 
@@ -362,13 +333,14 @@ def home():
 
 @app.route("/dev/login-choice")
 def dev_login_choice():
-    """(Solo in DEV mode) Pagina per scegliere quale email usare per il login di test."""
-    if SSO_MODE != "dev":
-        return redirect(url_for("home"))
+    """
+    (Solo in DEV mode) Pagina per scegliere quale ruolo usare per il login di test.
+    """
+    if SSO_MODE != 'dev':
+        return redirect(url_for('home'))
     
-    return render_template("dev_login_choice.html",
-                         student_email=DEV_USER_EMAIL,
-                         docente_email=DEV_DOCENTE_EMAIL)
+    dev_roles = get_dev_roles()
+    return render_template("dev_login_choice.html", dev_roles=dev_roles)
 
 
 # ============================================================
@@ -379,13 +351,25 @@ def dev_login_choice():
 def sso_login():
     """
     Endpoint SSO. Il portale checkin chiama questa URL passando il JWT.
+    In DEV mode, accetta il parametro role per simulare i diversi ruoli.
     Questo è l'unico punto di ingresso autenticato nell'applicazione.
     """
     token = request.args.get("token")
 
-    if SSO_MODE == "dev" and not token:
-        dev_email = request.args.get("email") or DEV_USER_EMAIL
-        app.logger.info(f"DEV MODE: login simulato per {dev_email}")
+    # --- Modalità DEV: simula il login senza portale reale ---
+    if SSO_MODE == 'dev' and not token:
+        dev_role = request.args.get('role', 'studente')
+        dev_roles = get_dev_roles()
+        
+        if dev_role not in dev_roles:
+            return render_sso_error(
+                f"Ruolo DEV non valido: {dev_role}. Ruoli disponibili: {', '.join(dev_roles.keys())}",
+                SSO_CONFIG['portal_url'],
+                status_code=400
+            )
+        
+        dev_email = dev_roles[dev_role]
+        app.logger.info(f"DEV MODE: login simulato per ruolo '{dev_role}' con email {dev_email}")
         user_data = {
             "email": dev_email,
             "name": get_username(dev_email).replace(".", " ").title(),
@@ -468,8 +452,8 @@ def logout():
 # ROUTE DOCENTE
 # ============================================================
 
-@app.route("/emergenze")
-@role_required("docente")
+@app.route("/emergenze") # ROTTA EMERGENZE
+@role_required(['docente', 'rspp', 'dirigente', 'ufficio_tecnico'])  # Docenti e staff
 def emergenze():
     if _emergenze_cache["last_update"] is None:
         import time
@@ -483,6 +467,10 @@ def emergenze():
         _refresh_cache_in_background()
 
     c = _emergenze_cache
+    emergenza_status = _get_emergenza_status()
+    user = session.get('user', {})
+    user_role = user.get('role', '')
+    
     return render_template(
         "emergenze.html",
         risultati=c["risultati_filtrati"],
@@ -491,17 +479,21 @@ def emergenze():
         ora=c["ora"],
         total_aule=c["total_aule"],
         num_with_class=c["num_with_class"],
+        emergenza_attiva=emergenza_status["active"],
+        is_rspp=(user_role == 'rspp'),
     )
 
 
 @app.route("/api/emergenze/refresh", methods=["POST"])
+@role_required(['docente', 'rspp', 'dirigente', 'ufficio_tecnico'])  # Docenti e staff
 def refresh_emergenze():
     """Forza il ricalcolo della cache emergenze (es. da un pulsante nella UI)."""
     _refresh_cache_in_background()
     return jsonify({"success": True, "message": "Aggiornamento cache avviato"}), 202
 
 
-@app.route("/elencoStudenti/<classe>/<aula>")
+@app.route("/elencoStudenti/<classe>/<aula>") # ROTTA ELENCO STUDENTI
+@role_required(['docente', 'rspp', 'dirigente', 'ufficio_tecnico'])  # Docenti e staff
 def elencoStudenti(classe, aula):
     
     url = f"https://sipal.itispaleocapa.it/api/proxySipal/v1/studenti/classe/elenco/{classe}"
@@ -510,6 +502,8 @@ def elencoStudenti(classe, aula):
         "Authorization": f"Bearer {API_TOKEN}",
         "User-Agent": "Mozilla/5.0"
     }
+    
+    emergenza_status = _get_emergenza_status()
     
     try:
         response = requests.get(url, headers=headers)
@@ -528,7 +522,8 @@ def elencoStudenti(classe, aula):
             studenti=studenti,
             giorno=None,
             ora=None,
-            errore=None
+            errore=None,
+            emergenza_attiva=emergenza_status["active"]
         )
     except requests.HTTPError as e:
         return render_template(
@@ -538,7 +533,8 @@ def elencoStudenti(classe, aula):
             studenti=[],
             giorno=None,
             ora=None,
-            errore=f"Errore HTTP {e.response.status_code}"
+            errore=f"Errore HTTP {e.response.status_code}",
+            emergenza_attiva=emergenza_status["active"]
         )
     except Exception as e:
         return render_template(
@@ -548,17 +544,17 @@ def elencoStudenti(classe, aula):
             studenti=[],
             giorno=None,
             ora=None,
-            errore=f"Errore generico: {str(e)}"
+            errore=f"Errore generico: {str(e)}",
+            emergenza_attiva=emergenza_status["active"]
         )
 
-
-@app.route("/piantina")
+@app.route("/piantina") # ROTTA PIANTINA
+@sso_middleware.sso_login_required  # Accessibile a tutti i ruoli loggati
 def piantina():
     return render_template("piantina.html", pdf_path="/static/piantina.pdf")
 
-
-@app.route("/registri-compilati")
-@role_required("docente")
+@app.route("/registri-compilati") # ROTTA REGISTRI COMPILATI
+@role_required(['rspp', 'dirigente', 'ufficio_tecnico'])  # Solo staff
 def registri_compilati():
     import sqlite3
     
@@ -665,12 +661,21 @@ def registri_compilati():
 # ============================================================
 
 @app.route("/api/emergenze", methods=["POST"])
+@role_required(['docente', 'rspp', 'dirigente', 'ufficio_tecnico'])  # Docenti e staff
 def salva_presenze():
     """
     Salva le presenze degli studenti in un file JSON.
     Struttura del file: presenze.json contiene un array di oggetti, uno per ogni salvataggio.
     """
     try:
+        # Controlla se l'emergenza è attiva
+        emergenza_status = _get_emergenza_status()
+        if not emergenza_status["active"]:
+            return jsonify({
+                "error": "Nessuna emergenza in corso",
+                "message": "Non puoi compilare la rotta emergenze. Avvia prima un'emergenza."
+            }), 400
+        
         data = request.get_json()
         
         if not data or "classe" not in data or "presenze" not in data:
@@ -743,6 +748,40 @@ def salva_presenze():
         
     except Exception as e:
         return jsonify({"error": f"Errore durante il salvataggio: {str(e)}"}), 500
+
+
+@app.route("/api/emergenze/avvia", methods=["POST"])
+@role_required(['rspp'])  # Solo RSPP
+def avvia_emergenza():
+    """
+    API per avviare un'emergenza. Solo RSPP può accedere.
+    """
+    try:
+        status = _set_emergenza_status(active=True)
+        return jsonify({
+            "success": True,
+            "message": "Emergenza avviata",
+            "status": status
+        }), 200
+    except Exception as e:
+        return jsonify({"error": f"Errore durante l'avvio dell'emergenza: {str(e)}"}), 500
+
+
+@app.route("/api/emergenze/termina", methods=["POST"])
+@role_required(['rspp'])  # Solo RSPP
+def termina_emergenza():
+    """
+    API per terminare un'emergenza. Solo RSPP può accedere.
+    """
+    try:
+        status = _set_emergenza_status(active=False)
+        return jsonify({
+            "success": True,
+            "message": "Emergenza terminata",
+            "status": status
+        }), 200
+    except Exception as e:
+        return jsonify({"error": f"Errore durante la terminazione dell'emergenza: {str(e)}"}), 500
 
 @app.route("/dashboard")
 @sso_middleware.sso_login_required
