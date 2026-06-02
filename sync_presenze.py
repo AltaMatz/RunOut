@@ -40,8 +40,8 @@ def split_full_name(full_name):
     return nome, cognome
 
 
-def load_presenze_json():
-    with open(PRESENZE_FILE, "r", encoding="utf-8") as f:
+def load_presenze_json(presenze_file=PRESENZE_FILE):
+    with open(presenze_file, "r", encoding="utf-8") as f:
         data = json.load(f)
     if not isinstance(data, list):
         raise ValueError("presenze.json deve contenere una lista di record")
@@ -151,11 +151,11 @@ def upsert_studente(conn, classe_id, nome, cognome, stato_id, new_id):
     return True
 
 
-def sync_once():
-    records = load_presenze_json()
+def sync_once(db_path=DB_PATH, presenze_file=PRESENZE_FILE):
+    records = load_presenze_json(presenze_file)
     ordered = sorted(records, key=lambda r: str(r.get("timestamp", "")))
 
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(db_path)
     try:
         ensure_support_tables(conn)
         insert_stati_if_missing(conn)
