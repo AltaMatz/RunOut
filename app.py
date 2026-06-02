@@ -43,6 +43,7 @@ from config import (
     WHITELIST_FILE, API_TOKEN, DEBUG, SSO_CONFIG
 )
 from shared_modules.sso_middleware import SSOMiddleware, RateLimiter, RoleManager, render_sso_error
+from sync_presenze import sync_once
 
 
 # ============================================================
@@ -1083,10 +1084,8 @@ def download_registro_compilato_pdf(classe_key):
 @role_required(['docente', 'rspp', 'dirigente', 'ufficio_tecnico'])  # Docenti e staff
 def salva_presenze():
     """
-    Salva le presenze degli studenti nel database SQLite.
+    Salva le presenze degli studenti in presenze.json e sincronizza il database.
     """
-    import sqlite3
-    
     try:
         # Controlla se l'emergenza è attiva
         emergenza_status = _get_emergenza_status()
@@ -1162,14 +1161,18 @@ def salva_presenze():
         with open(file_path, "w", encoding="utf-8") as f:
             json.dump(all_presenze, f, ensure_ascii=False, indent=2)
         
+        # Sincronizza il database SQLite così la rotta registri-compilati
+        # riflette subito la compilazione.
+        sync_once(
+            db_path=os.path.join(BASE_DIR, "runout.db"),
+            presenze_file=file_path,
+        )
+        
         return jsonify({
             "success": True,
             "message": f"Presenze salvate per la classe {classe}",
             "record": record
         }), 200
-        
-        finally:
-            conn.close()
         
     except Exception as e:
         return jsonify({"error": f"Errore durante il salvataggio: {str(e)}"}), 500
