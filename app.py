@@ -2,6 +2,7 @@ import asyncio
 import atexit
 import json
 import os
+import re
 import secrets
 import subprocess
 import sys
@@ -18,8 +19,20 @@ from flask import (
     render_template_string,
     request,
     session,
+    send_from_directory,
     url_for,
 )  # type: ignore
+
+from openpyxl.utils import get_column_letter  # type: ignore
+from openpyxl import Workbook  # type: ignore
+from openpyxl.formatting.rule import CellIsRule  # type: ignore
+from openpyxl.styles import Alignment, Border, Font, PatternFill, Side  # type: ignore
+
+from reportlab.lib import colors  # type: ignore
+from reportlab.lib.pagesizes import A4, landscape  # type: ignore
+from reportlab.lib.units import mm  # type: ignore
+from reportlab.lib.utils import simpleSplit  # type: ignore
+from reportlab.pdfgen import canvas  # type: ignore
 
 from config import (
     FLASK_SECRET_KEY, SESSION_LIFETIME_SECONDS,
@@ -72,6 +85,420 @@ with open("floors.json", "r", encoding="utf-8") as f:
 aula = []
 for _, rooms in aule_dict.items():
     aula.extend(rooms)
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+REGISTRI_EXPORT_DIR = os.path.join(BASE_DIR, "exports", "registri_compilati")
+REGISTRI_EXPORT_PDF_DIR = os.path.join(REGISTRI_EXPORT_DIR, "pdf")
+
+
+def _format_date_value(value):
+    if not value:
+        return ""
+
+    try:
+        return datetime.strptime(value, "%Y-%m-%d").strftime("%d/%m/%Y")
+    except ValueError:
+        return value
+
+
+def _format_time_value(value):
+    if not value:
+        return ""
+
+    try:
+        return datetime.strptime(value, "%H:%M:%S").strftime("%H:%M")
+    except ValueError:
+        return value
+
+
+def _build_registri_export_filename(classe_key):
+    safe_classe_key = re.sub(r"[^A-Za-z0-9_-]+", "_", str(classe_key).strip().upper())
+    return f"registro_{safe_classe_key}.xlsx"
+
+
+def _load_registri_per_classe():
+    import sqlite3
+
+    registri_per_classe = {}
+    compilazioni_per_classe = {}
+
+    with sqlite3.connect(os.path.join(BASE_DIR, "runout.db")) as conn:
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+
+        cursor.execute(
+            """
+            SELECT 
+                c.ClasseID,
+                c.Anno,
+                c.Sezione,
+                r.StudenteID,
+                r.Nome,
+                r.Cognome,
+                r.Stato,
+                s.NomeStato,
+                s.Descrizione
+            FROM Registri r
+            JOIN Classi c ON r.Classe = c.ClasseID
+            LEFT JOIN Stati s ON r.Stato = s.StatoID
+            ORDER BY c.Anno ASC, c.Sezione ASC, r.Cognome ASC, r.Nome ASC
+            """
+        )
+        rows = cursor.fetchall()
+
+        cursor.execute(
+            """
+            SELECT sl1.Classe, sl1.Data, sl1.Ora, sl1.Timestamp
+            FROM SyncLog sl1
+            WHERE sl1.Timestamp = (
+                SELECT MAX(sl2.Timestamp)
+                FROM SyncLog sl2
+                WHERE sl2.Classe = sl1.Classe
+            )
+            """
+        )
+        sync_rows = cursor.fetchall()
+
+    for row in sync_rows:
+        classe_key = str(row["Classe"]).strip().upper()
+        compilazioni_per_classe[classe_key] = {
+            "data": _format_date_value(row["Data"] or ""),
+            "ora": _format_time_value(row["Ora"] or ""),
+            "timestamp": row["Timestamp"] or "",
+        }
+
+    for row in rows:
+        classe_key = f"{row['Anno']}{row['Sezione']}"
+
+        if classe_key not in registri_per_classe:
+            registri_per_classe[classe_key] = {
+                "anno": row["Anno"],
+                "sezione": row["Sezione"],
+                "studenti": [],
+                "data_compilazione": compilazioni_per_classe.get(classe_key, {}).get("data", ""),
+                "ora_compilazione": compilazioni_per_classe.get(classe_key, {}).get("ora", ""),
+            }
+
+        studente = {
+            "nome": row["Nome"] or "",
+            "cognome": row["Cognome"] or "",
+            "stato": row["NomeStato"] or "Non definito",
+            "stato_id": row["Stato"],
+            "descrizione": row["Descrizione"] or "",
+        }
+        registri_per_classe[classe_key]["studenti"].append(studente)
+
+        if not registri_per_classe[classe_key].get("data_compilazione"):
+            registri_per_classe[classe_key]["data_compilazione"] = compilazioni_per_classe.get(classe_key, {}).get("data", "")
+        if not registri_per_classe[classe_key].get("ora_compilazione"):
+            registri_per_classe[classe_key]["ora_compilazione"] = compilazioni_per_classe.get(classe_key, {}).get("ora", "")
+
+    return dict(sorted(registri_per_classe.items(), key=lambda x: (x[1]["anno"], x[1]["sezione"])))
+
+
+def _load_compilazioni_per_classe():
+    presenze_path = os.path.join(BASE_DIR, "presenze.json")
+    compilazioni_per_classe = {}
+
+    if not os.path.exists(presenze_path):
+        return compilazioni_per_classe
+
+    try:
+        with open(presenze_path, "r", encoding="utf-8") as file_handle:
+            records = json.load(file_handle)
+    except (OSError, json.JSONDecodeError):
+        return compilazioni_per_classe
+
+    if not isinstance(records, list):
+        return compilazioni_per_classe
+
+    for record in records:
+        classe_key = str(record.get("classe", "")).strip().upper()
+        if not classe_key:
+            continue
+
+        timestamp_value = str(record.get("timestamp", "")).strip()
+        current = compilazioni_per_classe.get(classe_key)
+        if current and current.get("timestamp", "") >= timestamp_value:
+            continue
+
+        compilazioni_per_classe[classe_key] = {
+            "data": _format_date_value(record.get("data", "")),
+            "ora": _format_time_value(record.get("ora", "")),
+            "docente": (record.get("docente_email") or record.get("docente") or "Non disponibile"),
+            "timestamp": timestamp_value,
+        }
+
+    return compilazioni_per_classe
+
+
+def _stato_lettera(stato):
+    stato_norm = str(stato or "").strip().upper()
+    if stato_norm in {"P", "PRESENTE"}:
+        return "P"
+    if stato_norm in {"A", "ASSENTE"}:
+        return "A"
+    if stato_norm in {"D", "DISPERSO"}:
+        return "D"
+    return ""
+
+
+def _generate_registri_excel_exports(registri_per_classe):
+    os.makedirs(REGISTRI_EXPORT_DIR, exist_ok=True)
+
+    title_fill = PatternFill("solid", fgColor="1F4E78")
+    subtitle_fill = PatternFill("solid", fgColor="D9EAF7")
+    header_fill = PatternFill("solid", fgColor="FFFFFF")
+    info_label_fill = PatternFill("solid", fgColor="E8EEF7")
+    info_value_fill = PatternFill("solid", fgColor="F8FAFC")
+    green_fill = PatternFill("solid", fgColor="C6EFCE")
+    yellow_fill = PatternFill("solid", fgColor="FFEB9C")
+    red_fill = PatternFill("solid", fgColor="FFC7CE")
+    thin_border = Border(
+        left=Side(style="thin", color="000000"),
+        right=Side(style="thin", color="000000"),
+        top=Side(style="thin", color="000000"),
+        bottom=Side(style="thin", color="000000"),
+    )
+
+    export_info = {}
+    for classe_key, classe_data in registri_per_classe.items():
+        filename = _build_registri_export_filename(classe_key)
+        file_path = os.path.join(REGISTRI_EXPORT_DIR, filename)
+
+        classe_label = f"{classe_data['anno']}{classe_data['sezione']}"
+        studenti = classe_data.get("studenti", [])
+        compilazione = classe_data.get("compilazione", {})
+        docente_email = compilazione.get("docente", "Non disponibile")
+
+        workbook = Workbook()
+        worksheet = workbook.active
+        worksheet.title = "Registro"
+
+        worksheet.sheet_view.showGridLines = False
+        worksheet.freeze_panes = "A4"
+        worksheet.sheet_properties.pageSetUpPr.fitToPage = True
+        worksheet.page_setup.fitToWidth = 1
+        worksheet.page_setup.fitToHeight = 1
+        worksheet.page_setup.orientation = "portrait"
+        worksheet.page_margins.left = 0.28
+        worksheet.page_margins.right = 0.28
+        worksheet.page_margins.top = 0.4
+        worksheet.page_margins.bottom = 0.4
+        worksheet.print_options.horizontalCentered = True
+
+        worksheet.merge_cells("A1:B1")
+        worksheet.merge_cells("A2:B2")
+        worksheet["A1"] = "ITIS P. Paleocapa"
+        worksheet["A2"] = f"APPELLO CLASSE {classe_label}"
+
+        title_cell = worksheet["A1"]
+        title_cell.font = Font(name="Calibri", size=18, bold=True, color="FFFFFF")
+        title_cell.alignment = Alignment(horizontal="center", vertical="center")
+        title_cell.fill = title_fill
+
+        subtitle_cell = worksheet["A2"]
+        subtitle_cell.font = Font(name="Calibri", size=11, bold=True, color="1F1F1F")
+        subtitle_cell.alignment = Alignment(horizontal="center", vertical="center")
+        subtitle_cell.fill = subtitle_fill
+
+        header_row = 4
+        worksheet["A4"] = "STUDENTE"
+        worksheet["B4"] = "STATO"
+        for cell in worksheet[header_row]:
+            cell.font = Font(name="Calibri", size=10, bold=True, color="1F1F1F")
+            cell.fill = header_fill
+            cell.alignment = Alignment(horizontal="center", vertical="center")
+            cell.border = thin_border
+
+        data_start_row = 5
+        for index, studente in enumerate(studenti, start=data_start_row):
+            worksheet[f"A{index}"] = f"{studente['cognome']} {studente['nome']}".strip()
+            worksheet[f"B{index}"] = _stato_lettera(studente["stato"])
+
+            worksheet[f"A{index}"].alignment = Alignment(horizontal="left", vertical="center", wrap_text=False)
+            worksheet[f"B{index}"].alignment = Alignment(horizontal="center", vertical="center")
+
+            if worksheet[f"B{index}"].value == "P":
+                worksheet[f"B{index}"].fill = green_fill
+            elif worksheet[f"B{index}"].value == "A":
+                worksheet[f"B{index}"].fill = yellow_fill
+            elif worksheet[f"B{index}"].value == "D":
+                worksheet[f"B{index}"].fill = red_fill
+
+            worksheet[f"A{index}"].border = thin_border
+            worksheet[f"B{index}"].border = thin_border
+
+        if studenti:
+            worksheet.conditional_formatting.add(
+                f"B{data_start_row}:B{worksheet.max_row}",
+                CellIsRule(operator="equal", formula=['"P"'], fill=green_fill),
+            )
+            worksheet.conditional_formatting.add(
+                f"B{data_start_row}:B{worksheet.max_row}",
+                CellIsRule(operator="equal", formula=['"A"'], fill=yellow_fill),
+            )
+            worksheet.conditional_formatting.add(
+                f"B{data_start_row}:B{worksheet.max_row}",
+                CellIsRule(operator="equal", formula=['"D"'], fill=red_fill),
+            )
+        else:
+            worksheet[f"A{data_start_row}"] = "Nessuno studente registrato"
+            worksheet[f"B{data_start_row}"] = ""
+            worksheet[f"A{data_start_row}"].border = thin_border
+            worksheet[f"B{data_start_row}"].border = thin_border
+
+        info_row = worksheet.max_row + 2
+        info_items = [
+            ("DATA", classe_data.get("data_compilazione", "")),
+            ("ORA", classe_data.get("ora_compilazione", "")),
+            ("DOCENTE", docente_email),
+        ]
+
+        for offset, (label, value) in enumerate(info_items):
+            row_number = info_row + offset
+            worksheet[f"A{row_number}"] = label
+            worksheet[f"B{row_number}"] = value or "Non disponibile"
+            worksheet[f"A{row_number}"].font = Font(name="Calibri", size=9, bold=True)
+            worksheet[f"A{row_number}"].fill = info_label_fill
+            worksheet[f"A{row_number}"].border = thin_border
+            worksheet[f"A{row_number}"].alignment = Alignment(horizontal="left", vertical="center")
+            worksheet[f"B{row_number}"].font = Font(name="Calibri", size=9)
+            worksheet[f"B{row_number}"].fill = info_value_fill
+            worksheet[f"B{row_number}"].border = thin_border
+            worksheet[f"B{row_number}"].alignment = Alignment(horizontal="left", vertical="center")
+
+        worksheet.row_dimensions[1].height = 24
+        worksheet.row_dimensions[2].height = 18
+        worksheet.row_dimensions[4].height = 18
+
+        worksheet.column_dimensions["A"].width = 48
+        worksheet.column_dimensions["B"].width = 12
+
+        workbook.save(file_path)
+        export_info[classe_key] = {
+            "filename": filename,
+        }
+
+    return export_info
+
+
+def _pdf_filename_for_classe(classe_key):
+    safe_classe_key = re.sub(r"[^A-Za-z0-9_-]+", "_", str(classe_key).strip().upper())
+    return f"registro_{safe_classe_key}.pdf"
+
+
+def _generate_registri_pdf_exports(registri_per_classe):
+    os.makedirs(REGISTRI_EXPORT_PDF_DIR, exist_ok=True)
+
+    page_width, page_height = A4
+    margin_left = 10 * mm
+    margin_right = 10 * mm
+    margin_top = 10 * mm
+    margin_bottom = 10 * mm
+    footer_height = 24 * mm
+    usable_width = page_width - margin_left - margin_right
+    student_col_width = usable_width * 0.83
+    state_col_width = usable_width * 0.17
+    title_top_y = page_height - margin_top
+    subtitle_top_y = title_top_y - 7 * mm
+    table_top_y = subtitle_top_y - 12 * mm
+    footer_top_limit = margin_bottom + footer_height
+
+    export_info = {}
+    for classe_key, classe_data in registri_per_classe.items():
+        filename = _pdf_filename_for_classe(classe_key)
+        file_path = os.path.join(REGISTRI_EXPORT_PDF_DIR, filename)
+
+        classe_label = f"{classe_data['anno']}{classe_data['sezione']}"
+        studenti = classe_data.get("studenti", [])
+        compilazione = classe_data.get("compilazione", {})
+        data_compilazione = compilazione.get("data") or classe_data.get("data_compilazione", "Non disponibile")
+        ora_compilazione = compilazione.get("ora") or classe_data.get("ora_compilazione", "Non disponibile")
+        docente_email = compilazione.get("docente", "Non disponibile")
+        pdf_canvas = canvas.Canvas(file_path, pagesize=A4)
+        pdf_canvas.setTitle(f"Registro classe {classe_label}")
+        pdf_canvas.setAuthor("Runout")
+
+        def draw_header():
+            pdf_canvas.setFillColor(colors.HexColor("#1F1F1F"))
+            pdf_canvas.setFont("Helvetica-Bold", 18)
+            pdf_canvas.drawCentredString(page_width / 2, title_top_y, "ITIS P. Paleocapa")
+            pdf_canvas.setFont("Helvetica-Bold", 11)
+            pdf_canvas.drawCentredString(page_width / 2, subtitle_top_y, f"APPELLO CLASSE {classe_label}")
+
+            header_y = table_top_y
+            pdf_canvas.setFillColor(colors.white)
+            pdf_canvas.rect(margin_left, header_y - 7 * mm, student_col_width, 7 * mm, fill=1, stroke=1)
+            pdf_canvas.rect(margin_left + student_col_width, header_y - 7 * mm, state_col_width, 7 * mm, fill=1, stroke=1)
+            pdf_canvas.setFillColor(colors.HexColor("#1F1F1F"))
+            pdf_canvas.setFont("Helvetica-Bold", 10)
+            pdf_canvas.drawCentredString(margin_left + student_col_width / 2, header_y - 4.6 * mm, "STUDENTE")
+            pdf_canvas.drawCentredString(margin_left + student_col_width + state_col_width / 2, header_y - 4.6 * mm, "STATO")
+
+        draw_header()
+
+        current_y = table_top_y - 7 * mm
+        if not studenti:
+            studenti = [{"cognome": "Nessuno studente registrato", "nome": "", "stato": ""}]
+
+        remaining_height = max(current_y - footer_top_limit, 40 * mm)
+        row_height = remaining_height / max(len(studenti), 1)
+        student_font_size = 9.5 if row_height >= 8.0 * mm else 8.5 if row_height >= 6.5 * mm else 7.5
+        student_leading = student_font_size + 1.0
+
+        for studente in studenti:
+            stato_lettera = _stato_lettera(studente["stato"])
+            student_text = f"{studente['cognome']} {studente['nome']}".strip()
+            wrapped_lines = simpleSplit(student_text, "Helvetica", student_font_size, student_col_width - 4 * mm)
+
+            if stato_lettera == "P" or stato_lettera == "A" or stato_lettera == "D":
+                fill_map = {
+                    "P": colors.HexColor("#C6EFCE"),
+                    "A": colors.HexColor("#FFEB9C"),
+                    "D": colors.HexColor("#FFC7CE"),
+                }
+                state_fill = fill_map[stato_lettera]
+            else:
+                state_fill = colors.white
+
+            pdf_canvas.setStrokeColor(colors.black)
+            pdf_canvas.setFillColor(colors.white)
+            pdf_canvas.rect(margin_left, current_y - row_height, student_col_width, row_height, fill=1, stroke=1)
+            pdf_canvas.setFillColor(state_fill)
+            pdf_canvas.rect(margin_left + student_col_width, current_y - row_height, state_col_width, row_height, fill=1, stroke=1)
+
+            pdf_canvas.setFillColor(colors.HexColor("#1F1F1F"))
+            pdf_canvas.setFont("Helvetica", student_font_size)
+            text_y = current_y - (row_height / 2) + ((len(wrapped_lines) - 1) * student_leading / 2)
+            for line in wrapped_lines:
+                pdf_canvas.drawString(margin_left + 2 * mm, text_y, line)
+                text_y -= student_leading
+
+            pdf_canvas.setFont("Helvetica-Bold", 10)
+            pdf_canvas.drawCentredString(margin_left + student_col_width + state_col_width / 2, current_y - row_height / 2 - 1.2 * mm, stato_lettera)
+
+            current_y -= row_height
+
+        footer_y = margin_bottom + 16 * mm
+        pdf_canvas.setFont("Helvetica-Bold", 9)
+        footer_items = [
+            ("DATA", data_compilazione or "Non disponibile"),
+            ("ORA", ora_compilazione or "Non disponibile"),
+            ("DOCENTE", docente_email or "Non disponibile"),
+        ]
+        for index, (label, value) in enumerate(footer_items):
+            y_position = footer_y - (index * 5 * mm)
+            pdf_canvas.setFillColor(colors.HexColor("#1F1F1F"))
+            pdf_canvas.drawString(margin_left, y_position, f"{label}")
+            pdf_canvas.setFont("Helvetica", 9)
+            pdf_canvas.drawString(margin_left + 15 * mm, y_position, value)
+            pdf_canvas.setFont("Helvetica-Bold", 9)
+
+        pdf_canvas.save()
+        export_info[classe_key] = {"filename": filename}
+
+    return export_info
 
 # ============================================================
 # CACHE EMERGENZE
@@ -560,104 +987,80 @@ def piantina():
 @app.route("/registri-compilati")
 @role_required("docente")
 def registri_compilati():
-    import sqlite3
-    
-    db_path = "runout.db"
-    registri_per_classe = {}
-    compilazioni_per_classe = {}
-    
     try:
-        conn = sqlite3.connect(db_path)
-        conn.row_factory = sqlite3.Row
-        cursor = conn.cursor()
-        
-        query = """
-        SELECT 
-            c.ClasseID,
-            c.Anno,
-            c.Sezione,
-            r.StudenteID,
-            r.Nome,
-            r.Cognome,
-            r.Stato,
-            s.NomeStato,
-            s.Descrizione
-        FROM Registri r
-        JOIN Classi c ON r.Classe = c.ClasseID
-        LEFT JOIN Stati s ON r.Stato = s.StatoID
-        ORDER BY c.Anno ASC, c.Sezione ASC, r.Cognome ASC, r.Nome ASC
-        """
-        
-        cursor.execute(query)
-        rows = cursor.fetchall()
+        registri_per_classe = _load_registri_per_classe()
+        compilazioni_per_classe = _load_compilazioni_per_classe()
 
-        cursor.execute(
-            """
-            SELECT sl1.Classe, sl1.Data, sl1.Ora, sl1.Timestamp
-            FROM SyncLog sl1
-            WHERE sl1.Timestamp = (
-                SELECT MAX(sl2.Timestamp)
-                FROM SyncLog sl2
-                WHERE sl2.Classe = sl1.Classe
+        for classe_key, classe_data in registri_per_classe.items():
+            classe_data["compilazione"] = compilazioni_per_classe.get(classe_key, {})
+        export_info = _generate_registri_excel_exports(registri_per_classe)
+        export_info_pdf = _generate_registri_pdf_exports(registri_per_classe)
+
+        for classe_key, classe_data in registri_per_classe.items():
+            classe_data["download_filename"] = export_info.get(classe_key, {}).get("filename", _build_registri_export_filename(classe_key))
+            classe_data["download_url"] = export_info.get(classe_key, {}).get(
+                "download_url",
+                url_for("download_registro_compilato", classe_key=classe_key),
             )
-            """
-        )
-        sync_rows = cursor.fetchall()
-        for row in sync_rows:
-            data_value = row["Data"] or ''
-            ora_value = row["Ora"] or ''
-
-            if data_value:
-                try:
-                    data_value = datetime.strptime(data_value, "%Y-%m-%d").strftime("%d/%m/%Y")
-                except ValueError:
-                    pass
-
-            if ora_value:
-                try:
-                    ora_value = datetime.strptime(ora_value, "%H:%M:%S").strftime("%H:%M")
-                except ValueError:
-                    pass
-
-            compilazioni_per_classe[str(row["Classe"]).strip().upper()] = {
-                "data": data_value,
-                "ora": ora_value,
-                "timestamp": row["Timestamp"] or "",
-            }
-        
-        for row in rows:
-            classe_key = f"{row['Anno']}{row['Sezione']}"
-            
-            if classe_key not in registri_per_classe:
-                registri_per_classe[classe_key] = {
-                    "anno": row["Anno"],
-                    "sezione": row["Sezione"],
-                    "studenti": [],
-                    "data_compilazione": compilazioni_per_classe.get(classe_key, {}).get("data", ""),
-                    "ora_compilazione": compilazioni_per_classe.get(classe_key, {}).get("ora", ""),
-                }
-            
-            studente = {
-                "nome": row["Nome"] or "",
-                "cognome": row["Cognome"] or "",
-                "stato": row["NomeStato"] or "Non definito",
-                "stato_id": row["Stato"],
-                "descrizione": row["Descrizione"] or "",
-            }
-            registri_per_classe[classe_key]["studenti"].append(studente)
-
-            if not registri_per_classe[classe_key].get("data_compilazione"):
-                registri_per_classe[classe_key]["data_compilazione"] = compilazioni_per_classe.get(classe_key, {}).get("data", "")
-            if not registri_per_classe[classe_key].get("ora_compilazione"):
-                registri_per_classe[classe_key]["ora_compilazione"] = compilazioni_per_classe.get(classe_key, {}).get("ora", "")
-        
-        registri_per_classe = dict(sorted(registri_per_classe.items(), key=lambda x: (x[1]["anno"], x[1]["sezione"])))
-        
-        conn.close()
+            classe_data["download_pdf_filename"] = export_info_pdf.get(classe_key, {}).get("filename", _pdf_filename_for_classe(classe_key))
+            classe_data["download_pdf_url"] = url_for("download_registro_compilato_pdf", classe_key=classe_key)
     except Exception as e:
         print(f"Errore nel recupero dei registri: {e}")
+        registri_per_classe = {}
     
     return render_template("registri_compilati.html", registri_per_classe=registri_per_classe)
+
+
+@app.route("/registri-compilati/download/<classe_key>")
+@role_required("docente")
+def download_registro_compilato(classe_key):
+    try:
+        registri_per_classe = _load_registri_per_classe()
+        compilazioni_per_classe = _load_compilazioni_per_classe()
+
+        for classe_key_corrente, classe_data in registri_per_classe.items():
+            classe_data["compilazione"] = compilazioni_per_classe.get(classe_key_corrente, {})
+
+        if classe_key not in registri_per_classe:
+            return "Registro non trovato", 404
+
+        _generate_registri_excel_exports(registri_per_classe)
+        filename = _build_registri_export_filename(classe_key)
+        file_path = os.path.join(REGISTRI_EXPORT_DIR, filename)
+
+        if not os.path.exists(file_path):
+            return "Registro non trovato", 404
+
+        return send_from_directory(REGISTRI_EXPORT_DIR, filename, as_attachment=True)
+    except Exception as e:
+        print(f"Errore nel download del registro {classe_key}: {e}")
+        return "Errore nella generazione del registro", 500
+
+
+@app.route("/registri-compilati/download/<classe_key>/pdf")
+@role_required("docente")
+def download_registro_compilato_pdf(classe_key):
+    try:
+        registri_per_classe = _load_registri_per_classe()
+        compilazioni_per_classe = _load_compilazioni_per_classe()
+
+        for classe_key_corrente, classe_data in registri_per_classe.items():
+            classe_data["compilazione"] = compilazioni_per_classe.get(classe_key_corrente, {})
+
+        if classe_key not in registri_per_classe:
+            return "Registro non trovato", 404
+
+        _generate_registri_pdf_exports(registri_per_classe)
+        filename = _pdf_filename_for_classe(classe_key)
+        file_path = os.path.join(REGISTRI_EXPORT_PDF_DIR, filename)
+
+        if not os.path.exists(file_path):
+            return "Registro non trovato", 404
+
+        return send_from_directory(REGISTRI_EXPORT_PDF_DIR, filename, as_attachment=True)
+    except Exception as e:
+        print(f"Errore nel download PDF del registro {classe_key}: {e}")
+        return "Errore nella generazione del registro PDF", 500
 
 
 # ============================================================
@@ -712,12 +1115,14 @@ def salva_presenze():
             }), 400
         
         now = datetime.now()
+        user = session.get("user") or {}
         record = {
             "classe": classe,
             "data": now.strftime("%Y-%m-%d"),
             "ora": now.strftime("%H:%M:%S"),
             "timestamp": now.isoformat(),
-            "presenze": presenze
+            "presenze": presenze,
+            "docente_email": user.get("email", ""),
         }
         
         file_path = os.path.join(os.path.dirname(__file__), "presenze.json")

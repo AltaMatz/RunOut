@@ -43,7 +43,7 @@ RunOut supporta il personale scolastico nella gestione operativa durante emergen
 - Pagina emergenze con cache in memoria (TTL 5 minuti) e refresh manuale.
 - Visualizzazione elenco studenti per classe/aula.
 - Salvataggio presenze su file `presenze.json`.
-- Pagina registri compilati con lettura da `runout.db`.
+- Pagina registri compilati con export Excel per classe da `runout.db`.
 
 ## Architettura
 
@@ -165,7 +165,7 @@ Se la whitelist e abilitata (`"enabled": true`), solo gli utenti presenti sono a
 - `POST /api/emergenze/refresh` Refresh cache emergenze
 - `GET /elencoStudenti/<classe>/<aula>` Elenco studenti classe
 - `POST /api/emergenze` Salvataggio presenze classe
-- `GET /registri-compilati` Elenco registri da SQLite (solo docente)
+- `GET /registri-compilati` Elenco file Excel dei registri per classe (solo docente)
 - `GET /piantina` Piantina edificio
 
 ## Dati e persistenza
