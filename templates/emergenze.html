@@ -9,14 +9,6 @@
         <div class="page-header">
             <a href="{{ url_for('dashboard') }}" class="btn-back">← Indietro</a>
             <h2>EMERGENZE</h2>
-            <div class="info-bar">
-                <span class="info-item">
-                    <strong>Giorno:</strong> {{ giorno_nome }}
-                </span>
-                <span class="info-item">
-                    <strong>Ora:</strong> {{ ora }}
-                </span>
-            </div>
         </div>
 
         <div class="content">
@@ -25,14 +17,13 @@
             <div class="emergenza-controls">
                 {% if emergenza_attiva %}
                 <button id="btn-termina-emergenza" class="btn-emergenza termina" data-action="termina">
-                    ⏹️ TERMINA EMERGENZA
+                    TERMINA EMERGENZA
                 </button>
                 <p class="status-label attiva">🟢 Emergenza in corso</p>
                 {% else %}
                 <button id="btn-avvia-emergenza" class="btn-emergenza avvia" data-action="avvia">
-                    ▶️ AVVIA EMERGENZA
+                    AVVIA EMERGENZA
                 </button>
-                <p class="status-label inattiva">🔴 Nessuna emergenza</p>
                 {% endif %}
             </div>
             {% endif %}
@@ -43,7 +34,7 @@
                 <div class="error-icon">⚠️</div>
                 <div class="error-message">
                     <h3>Nessuna emergenza in corso</h3>
-                    <p>Contatta l'ufficio tecnico per avviare un'emergenza prima di compilare la rotta.</p>
+                    <p>Al momento non puoi compilare nessuno dei seguenti registri</p>
                 </div>
             </div>
             {% endif %}
