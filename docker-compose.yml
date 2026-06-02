@@ -7,14 +7,14 @@ services:
       dockerfile: Dockerfile
     container_name: runout-app
     ports:
-      - "3020:3020"
+      - "127:3020:3020"
     environment:
       - APP_ENV=production
       - DEBUG=false
       - FLASK_SECRET_KEY=${FLASK_SECRET_KEY:-change-me-in-production}
       - SESSION_LIFETIME_SECONDS=28800
       - SSO_MODE=${SSO_MODE:-dev}
-      - SSO_JWT_SECRET=${SSO_JWT_SECRET:-test-secret-change-in-production}
+      - SSO_JWT_SECRET=${RUNOUT_JWT_SECRET:-test-secret-change-in-production}
       - SSO_JWT_ISSUER=${SSO_JWT_ISSUER:-sso-portal}
       - SSO_JWT_AUDIENCE=${SSO_JWT_AUDIENCE:-mia-app}
       - SSO_PORTAL_URL=${SSO_PORTAL_URL:-http://localhost:5000}
