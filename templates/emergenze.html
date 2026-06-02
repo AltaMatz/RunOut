@@ -19,8 +19,8 @@
         </div>
     </div>
 
-    <!-- PULSANTE AVVIA/TERMINA EMERGENZA - Solo RSPP -->
-    {% if is_rspp %}
+    <!-- PULSANTE AVVIA/TERMINA EMERGENZA - Solo Ufficio Tecnico -->
+    {% if is_ufficio_tecnico %}
     <div class="emergenza-controls">
         {% if emergenza_attiva %}
         <button id="btn-termina-emergenza" class="btn-emergenza termina" data-action="termina">
@@ -39,12 +39,12 @@
     {% endif %}
 
     <!-- MESSAGGIO DI ERRORE - Emergenza non attiva -->
-    {% if not emergenza_attiva and not is_rspp %}
+    {% if not emergenza_attiva and not is_ufficio_tecnico %}
     <div class="error-banner">
         <div class="error-icon">⚠️</div>
         <div class="error-message">
             <h3>Nessuna emergenza in corso</h3>
-            <p>Contatta l'RSPP per avviare un'emergenza prima di compilare la rotta.</p>
+            <p>Contatta l'ufficio tecnico per avviare un'emergenza prima di compilare la rotta.</p>
         </div>
     </div>
     {% endif %}

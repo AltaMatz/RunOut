@@ -471,6 +471,20 @@ def emergenze():
     user = session.get('user', {})
     user_role = user.get('role', '')
     
+    # Se emergenza non attiva, nessuno vede l'elenco delle classi
+    if not emergenza_status["active"]:
+        return render_template(
+            "emergenze.html",
+            risultati=[],
+            giorno=c["giorno"],
+            giorno_nome=c["giorno_nome"],
+            ora=c["ora"],
+            total_aule=0,
+            num_with_class=0,
+            emergenza_attiva=emergenza_status["active"],
+            is_ufficio_tecnico=(user_role == 'ufficio_tecnico'),
+        )
+    
     return render_template(
         "emergenze.html",
         risultati=c["risultati_filtrati"],
@@ -480,7 +494,7 @@ def emergenze():
         total_aule=c["total_aule"],
         num_with_class=c["num_with_class"],
         emergenza_attiva=emergenza_status["active"],
-        is_rspp=(user_role == 'rspp'),
+        is_ufficio_tecnico=(user_role == 'ufficio_tecnico'),
     )
 
 
@@ -495,6 +509,10 @@ def refresh_emergenze():
 @app.route("/elencoStudenti/<classe>/<aula>") # ROTTA ELENCO STUDENTI
 @role_required(['docente', 'rspp', 'dirigente', 'ufficio_tecnico'])  # Docenti e staff
 def elencoStudenti(classe, aula):
+    # Verifica che l'emergenza sia attiva
+    emergenza_status = _get_emergenza_status()
+    if not emergenza_status["active"]:
+        return redirect(url_for('emergenze'))
     
     url = f"https://sipal.itispaleocapa.it/api/proxySipal/v1/studenti/classe/elenco/{classe}"
     headers = {
@@ -502,8 +520,6 @@ def elencoStudenti(classe, aula):
         "Authorization": f"Bearer {API_TOKEN}",
         "User-Agent": "Mozilla/5.0"
     }
-    
-    emergenza_status = _get_emergenza_status()
     
     try:
         response = requests.get(url, headers=headers)
@@ -664,9 +680,10 @@ def registri_compilati():
 @role_required(['docente', 'rspp', 'dirigente', 'ufficio_tecnico'])  # Docenti e staff
 def salva_presenze():
     """
-    Salva le presenze degli studenti in un file JSON.
-    Struttura del file: presenze.json contiene un array di oggetti, uno per ogni salvataggio.
+    Salva le presenze degli studenti nel database SQLite.
     """
+    import sqlite3
+    
     try:
         # Controlla se l'emergenza è attiva
         emergenza_status = _get_emergenza_status()
@@ -746,12 +763,15 @@ def salva_presenze():
             "record": record
         }), 200
         
+        finally:
+            conn.close()
+        
     except Exception as e:
         return jsonify({"error": f"Errore durante il salvataggio: {str(e)}"}), 500
 
 
 @app.route("/api/emergenze/avvia", methods=["POST"])
-@role_required(['rspp'])  # Solo RSPP
+@role_required(['ufficio_tecnico'])  # Solo Ufficio Tecnico
 def avvia_emergenza():
     """
     API per avviare un'emergenza. Solo RSPP può accedere.
@@ -768,7 +788,7 @@ def avvia_emergenza():
 
 
 @app.route("/api/emergenze/termina", methods=["POST"])
-@role_required(['rspp'])  # Solo RSPP
+@role_required(['ufficio_tecnico'])  # Solo Ufficio Tecnico
 def termina_emergenza():
     """
     API per terminare un'emergenza. Solo RSPP può accedere.
