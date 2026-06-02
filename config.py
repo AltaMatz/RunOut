@@ -24,8 +24,11 @@ SESSION_LIFETIME_SECONDS = int(os.getenv('SESSION_LIFETIME_SECONDS', '28800'))  
 # SSO CONFIGURATION
 # ============================================================
 SSO_MODE = os.getenv('SSO_MODE', 'dev').lower()  # 'dev' or 'production'
-DEV_USER_EMAIL = os.getenv('DEV_USER_EMAIL', 'vivo.ciro.studente@itispaleocapa.it')
-DEV_DOCENTE_EMAIL = os.getenv('DEV_DOCENTE_EMAIL', 'luca.todaro@itispaleocapa.it')
+DEV_USER_EMAIL = os.getenv('DEV_USER_EMAIL', 'cognome.nome.studente@itispaleocapa.it')
+DEV_DOCENTE_EMAIL = os.getenv('DEV_DOCENTE_EMAIL', 'nome.cognome@itispaleocapa.it')
+DEV_RSPP_EMAIL = os.getenv('DEV_RSPP_EMAIL', 'rspp@itispaleocapa.it')
+DEV_DIRIGENTE_EMAIL = os.getenv('DEV_DIRIGENTE_EMAIL', 'dirigente@itispaleocapa.it')
+DEV_UFFICIO_TECNICO_EMAIL = os.getenv('DEV_UFFICIO_TECNICO_EMAIL', 'ufficiotecnico@itispaleocapa.it')
 
 # JWT Configuration (valori deve venire dal portale SSO)
 SSO_JWT_SECRET = os.getenv('SSO_JWT_SECRET', 'test-secret-change-in-production')

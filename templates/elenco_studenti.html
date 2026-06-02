@@ -19,6 +19,17 @@
         </a>
     </div>
 
+    <!-- MESSAGGIO ERRORE - Emergenza non attiva -->
+    {% if not emergenza_attiva %}
+    <div class="error-banner-disabled">
+        <div class="error-icon">⚠️</div>
+        <div class="error-content">
+            <h3>Nessuna emergenza in corso</h3>
+            <p>Il form è disabilitato perché non c'è emergenza attiva. Contatta l'RSPP per avviarne una.</p>
+        </div>
+    </div>
+    {% endif %}
+
     {% if errore %}
         <div class="error-container">
             <div class="error-message-large">
@@ -35,7 +46,7 @@
             </div>
 
             {% if studenti|length > 0 %}
-                <form id="presenze-form">
+                <form id="presenze-form" {% if not emergenza_attiva %}class="form-disabled"{% endif %}>
                     <div class="studenti-list-container">
                         <!-- Column Headers -->
                         <div class="studenti-row header-row">
@@ -78,17 +89,17 @@
                                     {% endif %}
                                 </div>
                                 <div class="presenze-col">
-                                    <button type="button" class="presence-btn" data-status="PRESENTE" data-studente="{{ nome_studente }}" data-index="{{ loop.index0 }}">
+                                    <button type="button" class="presence-btn" data-status="PRESENTE" data-studente="{{ nome_studente }}" data-index="{{ loop.index0 }}" {% if not emergenza_attiva %}disabled{% endif %}>
                                         P
                                     </button>
                                 </div>
                                 <div class="presenze-col">
-                                    <button type="button" class="presence-btn" data-status="ASSENTE" data-studente="{{ nome_studente }}" data-index="{{ loop.index0 }}">
+                                    <button type="button" class="presence-btn" data-status="ASSENTE" data-studente="{{ nome_studente }}" data-index="{{ loop.index0 }}" {% if not emergenza_attiva %}disabled{% endif %}>
                                         A
                                     </button>
                                 </div>
                                 <div class="presenze-col">
-                                    <button type="button" class="presence-btn" data-status="DISPERSO" data-studente="{{ nome_studente }}" data-index="{{ loop.index0 }}">
+                                    <button type="button" class="presence-btn" data-status="DISPERSO" data-studente="{{ nome_studente }}" data-index="{{ loop.index0 }}" {% if not emergenza_attiva %}disabled{% endif %}>
                                         D
                                     </button>
                                 </div>
@@ -96,7 +107,7 @@
                         {% endfor %}
                     </div>
                     <div class="save-button-container">
-                        <button type="submit" class="save-button" id="save-btn">
+                        <button type="submit" class="save-button" id="save-btn" {% if not emergenza_attiva %}disabled{% endif %}>
                             💾 Salva Presenze
                         </button>
                         <div id="save-message" class="save-message"></div>
@@ -300,6 +311,43 @@ document.addEventListener('DOMContentLoaded', function() {
     background-color: #f44336;
     color: white;
     border-color: #da190b;
+}
+
+/* ===== FORM DISABILITATO ===== */
+.form-disabled .presence-btn:disabled,
+.form-disabled .save-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* ===== ERROR BANNER - Emergenza non attiva ===== */
+.error-banner-disabled {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    margin: 2rem 0;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+    border-left: 4px solid #ff9800;
+    border-radius: 8px;
+}
+
+.error-banner-disabled .error-icon {
+    font-size: 2rem;
+    min-width: 40px;
+    text-align: center;
+}
+
+.error-banner-disabled .error-content h3 {
+    margin: 0 0 0.5rem 0;
+    color: #e65100;
+    font-size: 1.1rem;
+}
+
+.error-banner-disabled .error-content p {
+    margin: 0;
+    color: #bf360c;
+    font-size: 0.95rem;
 }
 </style>
 

@@ -19,6 +19,36 @@
         </div>
     </div>
 
+    <!-- PULSANTE AVVIA/TERMINA EMERGENZA - Solo RSPP -->
+    {% if is_rspp %}
+    <div class="emergenza-controls">
+        {% if emergenza_attiva %}
+        <button id="btn-termina-emergenza" class="btn-emergenza termina" data-action="termina">
+            <span class="icon">⏹️</span>
+            TERMINA EMERGENZA
+        </button>
+        <p class="status-label attiva">🟢 Emergenza in corso</p>
+        {% else %}
+        <button id="btn-avvia-emergenza" class="btn-emergenza avvia" data-action="avvia">
+            <span class="icon">▶️</span>
+            AVVIA EMERGENZA
+        </button>
+        <p class="status-label inattiva">🔴 Nessuna emergenza</p>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- MESSAGGIO DI ERRORE - Emergenza non attiva -->
+    {% if not emergenza_attiva and not is_rspp %}
+    <div class="error-banner">
+        <div class="error-icon">⚠️</div>
+        <div class="error-message">
+            <h3>Nessuna emergenza in corso</h3>
+            <p>Contatta l'RSPP per avviare un'emergenza prima di compilare la rotta.</p>
+        </div>
+    </div>
+    {% endif %}
+
     <div class="stats-bar">
         <div class="stat-card">
             <div class="stat-number">{{ total_aule }}</div>
@@ -134,5 +164,162 @@
 .btn-back-dashboard:active {
     transform: scale(0.98);
 }
+
+/* ===== EMERGENZA CONTROLS ===== */
+.emergenza-controls {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 2rem 0;
+    padding: 2rem;
+    background: linear-gradient(135deg, #f5f7fa 0%, #eef1f6 100%);
+    border-radius: 12px;
+    border: 2px solid #e0e6ed;
+}
+
+.btn-emergenza {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 16px 48px;
+    font-size: 1.2rem;
+    font-weight: 700;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    min-width: 300px;
+}
+
+.btn-emergenza .icon {
+    font-size: 1.4rem;
+}
+
+.btn-emergenza.avvia {
+    background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+    color: white;
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+}
+
+.btn-emergenza.avvia:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+}
+
+.btn-emergenza.avvia:active {
+    transform: scale(0.98);
+}
+
+.btn-emergenza.termina {
+    background: linear-gradient(135deg, #f44336 0%, #da190b 100%);
+    color: white;
+    box-shadow: 0 4px 12px rgba(244, 67, 54, 0.3);
+}
+
+.btn-emergenza.termina:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(244, 67, 54, 0.4);
+}
+
+.btn-emergenza.termina:active {
+    transform: scale(0.98);
+}
+
+.status-label {
+    margin-top: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    text-align: center;
+}
+
+.status-label.attiva {
+    color: #2e7d32;
+}
+
+.status-label.inattiva {
+    color: #c62828;
+}
+
+/* ===== ERROR BANNER - Emergenza non attiva ===== */
+.error-banner {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    margin: 2rem 0;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+    border-left: 4px solid #ff9800;
+    border-radius: 8px;
+}
+
+.error-banner .error-icon {
+    font-size: 2rem;
+    min-width: 40px;
+    text-align: center;
+}
+
+.error-banner .error-message h3 {
+    margin: 0 0 0.5rem 0;
+    color: #e65100;
+    font-size: 1.1rem;
+}
+
+.error-banner .error-message p {
+    margin: 0;
+    color: #bf360c;
+    font-size: 0.95rem;
+}
 </style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const btnAvvia = document.getElementById('btn-avvia-emergenza');
+    const btnTermina = document.getElementById('btn-termina-emergenza');
+
+    if (btnAvvia) {
+        btnAvvia.addEventListener('click', function() {
+            if (confirm('Sei sicuro di voler AVVIARE un\'emergenza?')) {
+                toggleEmergenza('avvia');
+            }
+        });
+    }
+
+    if (btnTermina) {
+        btnTermina.addEventListener('click', function() {
+            if (confirm('Sei sicuro di voler TERMINARE l\'emergenza?')) {
+                toggleEmergenza('termina');
+            }
+        });
+    }
+
+    function toggleEmergenza(action) {
+        const endpoint = action === 'avvia' ? '/api/emergenze/avvia' : '/api/emergenze/termina';
+        
+        fetch(endpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Ricarica la pagina dopo 1 secondo
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+            } else {
+                alert('Errore: ' + (data.error || 'Operazione fallita'));
+            }
+        })
+        .catch(error => {
+            console.error('Errore:', error);
+            alert('Errore di comunicazione con il server');
+        });
+    }
+});
+</script>
 {% endblock %}
