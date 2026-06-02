@@ -228,5 +228,41 @@
       "TRESOLDI TANCREDI": "PRESENTE"
     },
     "docente_email": "nome.cognome@itispaleocapa.it"
+  },
+  {
+    "classe": "1EB",
+    "data": "2026-06-03",
+    "ora": "00:18:12",
+    "timestamp": "2026-06-03T00:18:12.989691",
+    "presenze": {
+      "ALANES CORPA GIULIA": "PRESENTE",
+      "ANDREANI MARGHERITA VERA": "PRESENTE",
+      "ANESA RICCARDO": "PRESENTE",
+      "ARTIFONI ANDREA": "PRESENTE",
+      "BREMBILLA RICCARDO": "PRESENTE",
+      "CAMPANA DAVIDE": "PRESENTE",
+      "CANINI CARLO": "PRESENTE",
+      "CHITO' GIULIO": "PRESENTE",
+      "COMASCHI DAVIDE": "PRESENTE",
+      "CORTINOVIS DAVIDE": "PRESENTE",
+      "FLORES CARVAJAL ALBERT ERIK": "PRESENTE",
+      "GINTOLI ESTER": "PRESENTE",
+      "GIUDICE JACOPO": "PRESENTE",
+      "GRANDI RICCARDO": "PRESENTE",
+      "MARCHESI RICCARDO": "PRESENTE",
+      "MERINO RODRIGUEZ MICHELE ALIPIO": "PRESENTE",
+      "MUSARDO MIRKO": "PRESENTE",
+      "NIANE KHADIM": "PRESENTE",
+      "REPETTO FRANCESCO": "PRESENTE",
+      "RIGAMONTI ALESSANDRO": "PRESENTE",
+      "RODRIGUEZ IRIARTE EMANUELE": "PRESENTE",
+      "SAURA FEDERICO": "PRESENTE",
+      "SINGH GURANSH": "PRESENTE",
+      "SINGH GURPRINCE": "PRESENTE",
+      "SPINELLI ANDREA": "PRESENTE",
+      "TALAJ ERIS": "PRESENTE",
+      "ZUCCHELLI EDWARD": "PRESENTE"
+    },
+    "docente_email": "ufficiotecnico@itispaleocapa.it"
   }
 ]

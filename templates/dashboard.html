@@ -4,186 +4,300 @@
 
 {% block content %}
 <div class="page-container">
-    <div class="dashboard-header">
-        <div class="user-info">
-            <h2>Benvenuto {{ user.name or user.email }}!</h2>
-            <div class="user-role">
-                <span class="badge badge-{{ user.role }}">
-                    {% if user.role == 'student' %}
-                        👨‍🎓 Studente
-                    {% elif user.role == 'docente' %}
-                        👨‍🏫 Docente
-                    {% elif user.role == 'rspp' %}
-                        👷 RSPP
-                    {% elif user.role == 'dirigente' %}
-                        👔 Dirigente
-                    {% elif user.role == 'ufficio_tecnico' %}
-                        🔧 Ufficio Tecnico
-                    {% else %}
-                        👤 {{ user.role }}
-                    {% endif %}
+    <div class="dashboard-section">
+
+        <div class="dash-header">
+            <div class="dash-header-left">
+                <span class="logo-text">Runout</span>
+                <span class="dash-badge">
+                    {% if user.role == 'student' %}Studente
+                    {% elif user.role == 'docente' %}Docente
+                    {% elif user.role == 'rspp' %}RSPP
+                    {% elif user.role == 'dirigente' %}Dirigente
+                    {% elif user.role == 'ufficio_tecnico' %}Ufficio Tecnico
+                    {% else %}{{ user.role }}{% endif %}
                 </span>
             </div>
-            {% if user.picture %}
-                <img src="{{ user.picture }}" alt="Avatar" class="user-avatar">
-            {% endif %}
+            <div class="dash-header-right">
+                {% if user.picture %}
+                    <img src="{{ user.picture }}" alt="Avatar" class="user-avatar">
+                {% endif %}
+                <div>
+                    <div class="user-name">{{ user.name or user.email }}</div>
+                    <div class="user-sub">{{ user.email }}</div>
+                </div>
+            </div>
         </div>
-    </div>
 
-    <div class="dashboard-content">
-        <section class="feature-card">
-            <h3>📍 Emergenze</h3>
-            <p>Gestione emergenze scolastiche</p>
-            <a href="{{ url_for('emergenze') }}" class="btn btn-action">Vai</a>
-        </section>
+        <div class="content">
 
-        <section class="feature-card">
-            <h3>🗺️ Piantina</h3>
-            <p>Mappa dell'edificio scolastico</p>
-            <a href="{{ url_for('piantina') }}" class="btn btn-action">Vai</a>
-        </section>
+            <div class="welcome-row">
+                <p class="section-label">Benvenuto</p>
+                <h2 class="welcome-title">Ciao, {{ (user.name or user.email).split(' ')[0] }}.</h2>
+                <p class="welcome-sub">Usa la barra in basso per navigare tra le sezioni disponibili.</p>
+            </div>
 
-        <section class="feature-card">
-            <h3>📋 Registri</h3>
-            <p>Registri compilati</p>
-            <a href="{{ url_for('registri_compilati') }}" class="btn btn-action">Vai</a>
-        </section>
+            <div class="how-to-grid">
+
+                <div class="how-card">
+                    <div class="how-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M8 7v10M3 12h18"/></svg>
+                    </div>
+                    <div class="how-body">
+                        <div class="how-title">Piantina</div>
+                        <p class="how-desc">Planimetrie dell'istituto per edificio e piano. Visualizza ogni palazzina o la mappa integrale e scarica le immagini.</p>
+                    </div>
+                </div>
+
+                {% if user.role in ['docente', 'rspp', 'dirigente', 'ufficio_tecnico'] %}
+                <div class="how-card">
+                    <div class="how-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4m0 4h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+                    </div>
+                    <div class="how-body">
+                        <div class="how-title">Emergenze</div>
+                        <p class="how-desc">Compila i registri di emergenza quando è in corso un emergenza ed invia il registro al responsabile.</p>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if user.role in ['rspp', 'dirigente', 'ufficio_tecnico'] %}
+                <div class="how-card">
+                    <div class="how-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="2"/><path d="M9 12h6M9 16h4"/></svg>
+                    </div>
+                    <div class="how-body">
+                        <div class="how-title">Registri compilati</div>
+                        <p class="how-desc">Registri di sicurezza: consulta lo storico, visualizza e i documenti.</p>
+                    </div>
+                </div>
+                {% endif %}
+
+                <div class="how-card how-card-muted">
+                    <div class="how-icon how-icon-muted">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+                    </div>
+                    <div class="how-body">
+                        <div class="how-title">Informazioni</div>
+                        <p class="how-desc">I contenuti visibili dipendono dal tuo ruolo. Per assistenza contatta il responsabile di sistema.</p>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
     </div>
 </div>
 
 <style>
-.dashboard-header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 32px;
-    border-radius: 16px;
-    margin-bottom: 24px;
-    text-align: center;
+.dashboard-section {
+    background: #f5f6f0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
 }
 
-.user-info h2 {
-    margin: 0 0 8px;
-    font-size: 24px;
+.dash-header {
+    background: #ffffff;
+    border-bottom: 1px solid #e8e9e3;
+    padding: 14px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
 }
 
-.user-email {
-    color: rgba(255,255,255,0.8);
-    margin: 0 0 12px;
-    font-size: 14px;
+.dash-header-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
-.user-role {
-    margin: 12px 0;
-}
-
-.badge {
-    display: inline-block;
-    padding: 6px 14px;
-    border-radius: 20px;
-    font-size: 13px;
+.logo-text {
+    font-size: 16px;
     font-weight: 600;
-    background: rgba(255,255,255,0.2);
-    color: white;
-    border: 1px solid white;
+    color: #242935;
 }
 
-.badge-student {
-    background: rgba(100, 200, 255, 0.3);
-    border-color: rgba(100, 200, 255, 0.8);
+.dash-badge {
+    background: #e2f75c;
+    color: #242935;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 4px;
+    letter-spacing: 0.5px;
 }
 
-.badge-docente {
-    background: rgba(150, 200, 100, 0.3);
-    border-color: rgba(150, 200, 100, 0.8);
-}
-
-.badge-rspp {
-    background: rgba(200, 150, 100, 0.3);
-    border-color: rgba(200, 150, 100, 0.8);
-}
-
-.badge-dirigente {
-    background: rgba(200, 100, 100, 0.3);
-    border-color: rgba(200, 100, 100, 0.8);
-}
-
-.badge-ufficio_tecnico {
-    background: rgba(100, 200, 200, 0.3);
-    border-color: rgba(100, 200, 200, 0.8);
+.dash-header-right {
+    display: flex;
+    align-items: center;
+    gap: 9px;
 }
 
 .user-avatar {
-    width: 64px;
-    height: 64px;
+    width: 30px;
+    height: 30px;
     border-radius: 50%;
-    border: 3px solid white;
-    margin: 12px 0;
+    border: 2px solid #e8e9e3;
+    object-fit: cover;
 }
 
-.auth-time {
-    font-size: 12px;
-    color: rgba(255,255,255,0.7);
-    margin: 12px 0 0;
+.user-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: #242935;
+    line-height: 1.3;
 }
 
-.dashboard-content {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+.user-sub {
+    font-size: 11px;
+    color: #8a8f7a;
+}
+
+.content {
+    padding: 20px 32px 24px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
     gap: 16px;
-    margin-bottom: 24px;
 }
 
-.feature-card {
-    background: white;
-    border: 1px solid #eee;
-    border-radius: 12px;
-    padding: 20px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+.welcome-row {
+    margin: 0;
 }
 
-.feature-card h3 {
-    margin: 0 0 8px;
-    color: #333;
+.section-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #8a8f7a;
+    margin: 0 0 4px;
 }
 
-.feature-card p {
-    margin: 0 0 12px;
-    color: #666;
-    font-size: 14px;
+.welcome-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: #242935;
+    margin: 0 0 4px;
+    letter-spacing: -0.3px;
 }
 
-.btn-action {
-    display: inline-block;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 10px 20px;
-    border-radius: 6px;
-    text-decoration: none;
-    font-size: 14px;
-    font-weight: 500;
+.welcome-sub {
+    font-size: 13px;
+    color: #5c6250;
+    margin: 0;
 }
 
-.btn-action:hover {
-    opacity: 0.9;
+.how-to-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    flex: 1;
 }
 
-.dashboard-footer {
-    text-align: center;
-    padding-top: 16px;
-    border-top: 1px solid #eee;
+.how-card {
+    background: #ffffff;
+    border: 1px solid #e8e9e3;
+    border-radius: 10px;
+    padding: 14px 16px;
+    display: flex;
+    gap: 13px;
+    align-items: flex-start;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.how-card:hover {
+    border-color: #c5db3a;
+    box-shadow: 0 2px 10px rgba(226, 247, 92, 0.18);
+}
+
+.how-card-muted {
+    background: #f5f6f0;
+}
+
+.how-card-muted:hover {
+    border-color: #d0d4c8;
+    box-shadow: none;
+}
+
+.how-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 7px;
+    background: #f5f6f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: #242935;
+}
+
+.how-icon-muted {
+    background: #e8e9e3;
+    color: #8a8f7a;
+}
+
+.how-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #242935;
+    margin-bottom: 3px;
+}
+
+.how-desc {
+    font-size: 12px;
+    color: #5c6250;
+    line-height: 1.55;
+    margin: 0;
+}
+
+.logout-row {
+    display: flex;
+    justify-content: flex-start;
+    margin-top: auto;
 }
 
 .btn-logout {
-    background: #f0f0f0;
-    color: #333;
-    padding: 12px 32px;
-    border-radius: 8px;
-    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #ffffff;
+    border: 1px solid #e8e9e3;
+    color: #5c6250;
+    padding: 7px 14px;
+    border-radius: 6px;
+    font-size: 12px;
     font-weight: 500;
+    text-decoration: none;
+    transition: border-color 0.15s, color 0.15s;
 }
 
 .btn-logout:hover {
-    background: #e0e0e0;
+    border-color: #242935;
+    color: #242935;
+}
+
+@media (max-width: 800px) {
+    .how-to-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 600px) {
+    .content {
+        padding: 16px 16px 20px;
+    }
+    .dash-header {
+        padding: 12px 16px;
+    }
+    .user-sub {
+        display: none;
+    }
+    .welcome-title {
+        font-size: 20px;
+    }
 }
 </style>
 {% endblock %}

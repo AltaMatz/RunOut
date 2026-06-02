@@ -3,46 +3,228 @@
 {% block title %}Registri Compilati - Runout{% endblock %}
 
 {% block content %}
-<div class="page-container">
-    <div class="content-section">
+<div class="registri-section">
+
+    <div class="registri-header">
         <h2 class="section-title">REGISTRI COMPILATI</h2>
-        
+        <p>Scarica i registri compilati per ogni classe</p>
+    </div>
+
+    <div class="registri-content">
         {% if registri_per_classe %}
             <div class="registri-grid">
             {% for classe_key, classe_data in registri_per_classe.items() %}
             <div class="registro-card">
-                <div class="registro-header">
-                    <div>
-                        <div class="registro-title">Classe {{ classe_data.anno }}{{ classe_data.sezione }}</div>
+                <div class="registro-card-header">
+                    <h3>Classe {{ classe_data.anno }}{{ classe_data.sezione }}</h3>
+                </div>
+                
+                <div class="registro-meta">
+                    <div class="meta-item">
+                        <span class="meta-label">Studenti:</span>
+                        <span class="meta-value">{{ classe_data.studenti|length }}</span>
                     </div>
-                    <div class="registro-actions">
-                        <a href="{{ classe_data.download_url }}" class="registro-btn registro-btn-main">
-                            Scarica Excel
-                        </a>
-                        <a href="{{ classe_data.download_pdf_url }}" class="registro-btn registro-btn-outline">
-                            Scarica PDF
-                        </a>
+                    <div class="meta-item">
+                        <span class="meta-label">Data:</span>
+                        <span class="meta-value">{{ classe_data.data_compilazione or '—' }}</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">Orario:</span>
+                        <span class="meta-value">{{ classe_data.ora_compilazione or '—' }}</span>
                     </div>
                 </div>
-                <div class="registro-meta-row">
-                    <div class="registro-meta-pill">
-                        <strong>Studenti:</strong> {{ classe_data.studenti|length }}
-                    </div>
-                    <div class="registro-meta-pill">
-                        <strong>Data:</strong> {{ classe_data.data_compilazione or 'Non disponibile' }}
-                    </div>
-                    <div class="registro-meta-pill">
-                        <strong>Orario:</strong> {{ classe_data.ora_compilazione or 'Non disponibile' }}
-                    </div>
+
+                <div class="registro-actions">
+                    <a href="{{ classe_data.download_url }}" class="btn-download btn-download-main">
+                        Scarica Excel
+                    </a>
+                    <a href="{{ classe_data.download_pdf_url }}" class="btn-download btn-download-outline">
+                        Scarica PDF
+                    </a>
                 </div>
             </div>
             {% endfor %}
             </div>
         {% else %}
         <div class="empty-state">
-            Nessun registro disponibile al momento.
+            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="2"/></svg>
+            <p>Nessun registro disponibile al momento</p>
         </div>
         {% endif %}
     </div>
 </div>
+
+<style>
+.registri-section {
+    background: #f5f6f0;
+    min-height: 100vh;
+}
+
+.registri-header {
+    background: #ffffff;
+    border-bottom: 1px solid #e8e9e3;
+    padding: 24px 40px;
+}
+
+.registri-header h2 {
+    font-size: 18px;
+    font-weight: 600;
+    color: #242935;
+    margin: 0 0 6px;
+    letter-spacing: 0.5px;
+}
+
+.registri-header p {
+    font-size: 13px;
+    color: #8a8f7a;
+    margin: 0;
+}
+
+.registri-content {
+    padding: 32px 40px;
+}
+
+.registri-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+}
+
+.registro-card {
+    background: #ffffff;
+    border: 1px solid #e8e9e3;
+    border-radius: 10px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.registro-card:hover {
+    border-color: #c5db3a;
+    box-shadow: 0 2px 12px rgba(226, 247, 92, 0.15);
+}
+
+.registro-card-header {
+    margin-bottom: 2px;
+}
+
+.registro-card-header h3 {
+    font-size: 14px;
+    font-weight: 600;
+    color: #242935;
+    margin: 0;
+}
+
+.registro-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+}
+
+.meta-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.meta-label {
+    font-size: 12px;
+    color: #8a8f7a;
+    font-weight: 500;
+}
+
+.meta-value {
+    font-size: 12px;
+    color: #5c6250;
+    font-weight: 500;
+}
+
+.registro-actions {
+    display: flex;
+    gap: 8px;
+    flex-direction: column;
+}
+
+.btn-download {
+    display: block;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    text-align: center;
+    text-decoration: none;
+    transition: all 0.15s;
+    cursor: pointer;
+}
+
+.btn-download-main {
+    background: #242935;
+    color: #e2f75c;
+    border: 1px solid #242935;
+}
+
+.btn-download-main:hover {
+    background: #1a1f28;
+    border-color: #1a1f28;
+}
+
+.btn-download-outline {
+    background: transparent;
+    color: #242935;
+    border: 1px solid #e8e9e3;
+}
+
+.btn-download-outline:hover {
+    background: #f5f6f0;
+    border-color: #242935;
+}
+
+.empty-state {
+    background: #ffffff;
+    border: 1px solid #e8e9e3;
+    border-radius: 10px;
+    padding: 40px 20px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}
+
+.empty-state svg {
+    color: #a8b090;
+    opacity: 0.6;
+}
+
+.empty-state p {
+    font-size: 13px;
+    color: #8a8f7a;
+    margin: 0;
+}
+
+@media (max-width: 900px) {
+    .registri-content {
+        padding: 24px 24px;
+    }
+    .registri-header {
+        padding: 20px 24px;
+    }
+}
+
+@media (max-width: 600px) {
+    .registri-grid {
+        grid-template-columns: 1fr;
+    }
+    .registri-content {
+        padding: 20px 16px;
+    }
+    .registri-header {
+        padding: 16px;
+    }
+}
+</style>
 {% endblock %}
