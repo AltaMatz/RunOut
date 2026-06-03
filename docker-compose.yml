@@ -7,7 +7,7 @@ services:
       dockerfile: Dockerfile
     container_name: runout-app
     ports:
-      - "127:3020:3020"
+      - "127.0.0.1:3020:3020"
     environment:
       - APP_ENV=production
       - DEBUG=false
