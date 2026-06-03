@@ -5,7 +5,11 @@
 {% block content %}
 <div class="page-container">
     <div class="welcome-section">
+
         <h2 class="section-title">Benvenuto su Runout</h2>
+        <div class="logo-container">
+            <img src="/../static/images/logo.png" alt="Runout Logo" class="app-logo">
+        </div>
         
         {% if user %}
             {# UTENTE AUTENTICATO #}
@@ -53,6 +57,30 @@
     justify-content: center;
 }
 
+/* --- NUOVI STILI PER IL LOGO 1:1 --- */
+.logo-container {
+    margin-bottom: 1.5rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.app-logo {
+    width: 120px;       /* Dimensione generosa e visibile */
+    height: 120px;      /* Forza le proporzioni 1:1 */
+    object-fit: contain;
+    filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.15)); /* Dà profondità al logo */
+    transition: transform 0.3s ease;
+}
+
+/* Micro-interazione opzionale al passaggio del mouse */
+@media (min-width: 1024px) {
+    .app-logo:hover {
+        transform: scale(1.05);
+    }
+}
+/* ----------------------------------- */
+
 .auth-actions {
     display: flex;
     flex-wrap: wrap;
@@ -79,7 +107,7 @@
 
 .dev-warning {
     color: #ffffff;
-    background: rgba(237, 137, 54, 0.2); /* Sfondo arancio trasparente molto soft per dev mode */
+    background: rgba(237, 137, 54, 0.2);
     padding: 0.75rem 1rem;
     border-radius: 8px;
     border: 1px solid rgba(237, 137, 54, 0.4);
@@ -90,11 +118,11 @@
 .sub-text {
     margin-top: 1.5rem !important;
     font-size: 0.8rem !important;
-    color: #a0aec0; /* Grigio chiaro per risaltare sul blu-grigio scuro */
+    color: #a0aec0;
 }
 
 .dev-sub-text {
-    color: #fc8181; /* Rosso chiaro per l'avviso di sicurezza in modalità dev */
+    color: #fc8181;
 }
 
 /* Bottoni di Sistema */
@@ -110,24 +138,24 @@
     cursor: pointer;
     font-size: 0.95rem;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    min-height: 48px; /* Touch target ottimale */
+    min-height: 48px;
 }
 
-/* Bottone Primario (Giallo-Verde, testo scuro) */
+/* Bottone Primario */
 .btn-primary {
     background: #e2f75c;
     color: #2d3748;
     box-shadow: 0 4px 12px rgba(226, 247, 92, 0.15);
 }
 
-/* Bottone Secondario (Outline chiaro) */
+/* Bottone Secondario */
 .btn-secondary {
     background: rgba(255, 255, 255, 0.05);
     color: #ffffff;
     border: 2px solid rgba(255, 255, 255, 0.2);
 }
 
-/* Bottone Largo (Login principale) */
+/* Bottone Largo */
 .btn-large {
     padding: 1rem 2.5rem;
     font-size: 1.1rem;
@@ -135,7 +163,7 @@
     max-width: 320px;
 }
 
-/* Stati di Hover e Active (Desktop e Mobile) */
+/* Stati di Hover e Active */
 @media (min-width: 1024px) {
     .btn-primary:hover {
         background: #d4ee3a;
@@ -155,4 +183,3 @@
 }
 </style>
 {% endblock %}
-
