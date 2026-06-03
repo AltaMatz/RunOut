@@ -264,5 +264,41 @@
       "ZUCCHELLI EDWARD": "PRESENTE"
     },
     "docente_email": "ufficiotecnico@itispaleocapa.it"
+  },
+  {
+    "classe": "1EA",
+    "data": "2026-06-03",
+    "ora": "13:00:07",
+    "timestamp": "2026-06-03T13:00:07.083633",
+    "presenze": {
+      "AMPOMA JULIAN AKOTO": "PRESENTE",
+      "ANESA LORENZO": "ASSENTE",
+      "BENAGLIA SIMONE": "DISPERSO",
+      "BORACCI DAVIDE": "PRESENTE",
+      "BOSIS FILIPPO": "PRESENTE",
+      "COLOMBI MATTEO": "PRESENTE",
+      "CRISTE GABRIELE": "PRESENTE",
+      "D'ANTONIO FRANCESCO": "PRESENTE",
+      "DIENG OMAR": "PRESENTE",
+      "FARINA DANIELE": "PRESENTE",
+      "HU MICHELE": "PRESENTE",
+      "LOMACCI LORENZO": "PRESENTE",
+      "LUISELLI GIOELE": "PRESENTE",
+      "MAGGIO GABRIEL": "PRESENTE",
+      "MEDOLAGO NICOLO'": "PRESENTE",
+      "MEREGALLI FILIPPO": "PRESENTE",
+      "MICCOLI GABRIELE": "PRESENTE",
+      "PIGNATELLI FABIO": "PRESENTE",
+      "RAVASIO RICCARDO": "PRESENTE",
+      "ROTASPERTI CRISTIAN": "PRESENTE",
+      "SINGH JASKIRAT": "PRESENTE",
+      "TENORIO GUARACHI DAVIDE": "PRESENTE",
+      "TIRONI SIMONE": "PRESENTE",
+      "YAACOUB LORENZO MILAD SALAMA ROMAN": "PRESENTE",
+      "ZIBETTI DIEGO ALESSANDRO": "PRESENTE",
+      "ZINESI KARL": "PRESENTE",
+      "ZUCCLINI SIMONE": "PRESENTE"
+    },
+    "docente_email": "ufficiotecnico@itispaleocapa.it"
   }
 ]
