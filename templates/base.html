@@ -13,7 +13,9 @@
     <nav class="navbar">
         <div class="nav-container">
             <div class="nav-logo">
-                <h1>RUNOUT</h1>
+                <div class="logo-container">
+                    <img src="/../static/images/logo.png" alt="Runout Logo" class="app-logo">
+                </div>
             </div>
             {% if session.get('user') %}
             <div class="nav-user">
@@ -82,6 +84,17 @@
     </script>
 
     <style>
+        .logo-container {
+            display: flex;
+            align-items: center;
+        }
+
+        .app-logo {
+            height: 36px;
+            width: auto;
+            object-fit: contain;
+        }
+
         .nav-container {
             display: flex;
             justify-content: space-between;
